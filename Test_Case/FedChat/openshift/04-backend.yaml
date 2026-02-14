@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-logs-pvc
+  namespace: fedchat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: documents-pvc
+  namespace: fedchat
+spec:
+  accessModes:
+    - ReadWriteMany  # Multiple pods may need access
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nist-cache-pvc
+  namespace: fedchat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi  # NIST dataset (~7GB) + FAISS index
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: policy-cache-pvc
+  namespace: fedchat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi  # Policy repository (~100MB) + FAISS index
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fedchat-backend
+  namespace: fedchat
+  labels:
+    app: backend
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedchat-backend
+  namespace: fedchat
+  labels:
+    app: backend
+spec:
+  replicas: 3  # Scale as needed
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      serviceAccountName: fedchat-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+      - name: wait-for-postgres
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command: 
+        - sh
+        - -c
+        - |
+          until timeout 1 bash -c "cat < /dev/null > /dev/tcp/fedchat-postgres/5432"; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1001
+      - name: wait-for-redis
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command:
+        - sh
+        - -c
+        - |
+          until timeout 1 bash -c "cat < /dev/null > /dev/tcp/fedchat-redis/6379"; do
+            echo "Waiting for redis..."
+            sleep 2
+          done
+          echo "Redis is ready"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1001
+      containers:
+      - name: backend
+        image: fedchat-backend:latest  # Build and push your image or use OpenShift image stream
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: fedchat-config
+        - secretRef:
+            name: fedchat-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1001
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/fedchat
+        - name: documents
+          mountPath: /data/documents
+        - name: nist-cache
+          mountPath: /app/.cache/nist_rag
+        - name: policy-cache
+          mountPath: /app/.cache/policy_rag
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: backend-logs-pvc
+      - name: documents
+        persistentVolumeClaim:
+          claimName: documents-pvc
+      - name: nist-cache
+        persistentVolumeClaim:
+          claimName: nist-cache-pvc
+      - name: policy-cache
+        persistentVolumeClaim:
+          claimName: policy-cache-pvc
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fedchat-backend-hpa
+  namespace: fedchat
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fedchat-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

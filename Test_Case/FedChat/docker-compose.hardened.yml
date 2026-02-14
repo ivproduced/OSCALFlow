@@ -1,0 +1,202 @@
+# Docker Compose Configuration for Hardened Images
+# This is an alternative docker-compose.yml that uses pre-built hardened images
+# instead of building from Dockerfile
+
+version: '3.8'
+
+services:
+  postgres:
+    image: registry.access.redhat.com/rhel9/postgresql-15:latest  # Hardened PostgreSQL
+    container_name: fedchat-postgres
+    environment:
+      POSTGRESQL_USER: ${DB_USER:-fedchat}
+      POSTGRESQL_PASSWORD: ${DB_PASSWORD}
+      POSTGRESQL_DATABASE: ${DB_NAME:-fedchat}
+      POSTGRESQL_ADMIN_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/pgsql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fedchat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+
+  redis:
+    image: registry.access.redhat.com/rhel9/redis-7:latest  # Hardened Redis
+    container_name: fedchat-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  ollama:
+    image: ollama/ollama:latest  # Note: Consider hardened alternative if available
+    container_name: fedchat-ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    # Use pre-built hardened image instead of building
+    # Options: -ironbank, -ubi, or -distroless
+    image: ${REGISTRY:-}${IMAGE_PREFIX:-fedchat}-backend:${HARDENED_TYPE:-ubi}
+    
+    # Uncomment to build locally with hardened Dockerfile
+    #build:
+    #  context: ./backend
+    #  dockerfile: Dockerfile.ubi  # or .ironbank or .distroless
+    
+    container_name: fedchat-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-fedchat}
+      DB_USER: ${DB_USER:-fedchat}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      
+      # LLM
+      OLLAMA_BASE_URL: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # NIST RAG
+      ENABLE_NIST_RAG: ${ENABLE_NIST_RAG:-true}
+      NIST_CACHE_DIR: /app/cache/nist
+      NIST_EMBEDDING_MODEL: ${NIST_EMBEDDING_MODEL:-text-embedding-3-small}
+      
+      # Policy RAG
+      ENABLE_POLICY_RAG: ${ENABLE_POLICY_RAG:-true}
+      POLICY_REPO_URL: ${POLICY_REPO_URL:-https://github.com/0xdefendA/policies}
+      POLICY_CACHE_DIR: /app/cache/policies
+      
+      # MCP
+      ENABLE_MCP: ${ENABLE_MCP:-true}
+      MCP_CONFIG_PATH: /app/mcp_config.json
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENABLE_AUDIT_LOG: ${ENABLE_AUDIT_LOG:-true}
+    volumes:
+      - ./mcp-servers/config.json:/app/mcp_config.json:ro
+      - ./guardrails/config.yml:/app/guardrails_config.yml:ro
+      - nist_cache:/app/cache/nist
+      - policy_cache:/app/cache/policies
+      - ./data/nist-rag:/app/data/nist-rag:ro  # Local NIST data
+      - ./data/policies:/app/data/policies:ro  # Local policy data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  frontend:
+    # Use pre-built hardened image
+    image: ${REGISTRY:-}${IMAGE_PREFIX:-fedchat}-frontend:${HARDENED_TYPE:-ubi}
+    
+    # Uncomment to build locally with hardened Dockerfile
+    #build:
+    #  context: ./librechat
+    #  dockerfile: Dockerfile.ubi  # or .ironbank
+    #  args:
+    #    AGENCY_NAME: ${AGENCY_NAME:-Federal Agency}
+    #    AGENCY_PRIMARY_COLOR: ${AGENCY_PRIMARY_COLOR:-#002868}
+    
+    container_name: fedchat-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      RAG_API_URL: http://backend:8000
+      ENDPOINTS: custom
+      CUSTOM_API_KEY: ${LIBRECHAT_API_KEY}
+    volumes:
+      - ./librechat/config/librechat.yaml:/app/librechat.yaml:ro
+      - librechat_logs:/app/logs
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ollama_models:
+    driver: local
+  nist_cache:
+    driver: local
+  policy_cache:
+    driver: local
+  librechat_logs:
+    driver: local
+
+networks:
+  default:
+    name: fedchat-network
+    driver: bridge

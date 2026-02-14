@@ -1,0 +1,131 @@
+# NeMo Guardrails Configuration for Federal Environment
+
+colang_version: "2.0"
+
+# Model configuration
+models:
+  - type: main
+    engine: local
+    model: llama3:70b
+
+# Define rails (constraints)
+rails:
+  input:
+    flows:
+      - check pii
+      - check blocked topics
+      - check prompt injection
+  
+  output:
+    flows:
+      - check pii
+      - check sensitive information
+      - check policy compliance
+
+# Define specific checks
+define user check pii:
+  """Check for personally identifiable information"""
+  if user message contains pii:
+    bot refuse "I cannot process messages containing PII"
+
+define user check blocked topics:
+  """Check for restricted topics"""
+  if user asks about classified:
+    bot refuse "I cannot discuss classified information"
+  if user asks about ssn:
+    bot refuse "I cannot process or store SSNs"
+  if user asks about personal health:
+    bot refuse "I cannot discuss personal health information"
+
+define user check prompt injection:
+  """Detect prompt injection attempts"""
+  if user message contains "ignore previous":
+    bot refuse "Invalid request"
+  if user message contains "system prompt":
+    bot refuse "Invalid request"
+  if user message contains "you are now":
+    bot refuse "Invalid request"
+
+define bot check sensitive information:
+  """Prevent disclosure of sensitive information"""
+  if bot response contains pii:
+    bot redact pii
+  if bot response contains credential:
+    bot refuse "I cannot share credentials"
+
+define bot check policy compliance:
+  """Ensure responses comply with federal policy"""
+  if bot response violates policy:
+    bot refuse "Response does not meet compliance requirements"
+
+# Define flows
+flows:
+  - id: greeting
+    elements:
+      - user: "hello"
+      - bot: "Hello! I'm your Federal AI Assistant. How can I help you today?"
+  
+  - id: capability_info
+    elements:
+      - user: "what can you do"
+      - bot: "I can help with document analysis, policy questions, and information retrieval within authorized systems. All interactions are audited for compliance."
+
+# Define bot behaviors
+define bot refuse $reason:
+  """Standard refusal message"""
+  bot say "I'm unable to process that request: {$reason}. Please ensure your query complies with federal information security requirements."
+
+define bot redact pii:
+  """Redact PII from responses"""
+  bot replace pii with "[REDACTED]"
+
+# Blocked patterns
+patterns:
+  pii:
+    - "social security number"
+    - "SSN"
+    - pattern: '\b\d{3}-\d{2}-\d{4}\b'
+    - "date of birth"
+    - "DOB"
+    - pattern: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+  
+  classified:
+    - "top secret"
+    - "classified"
+    - "secret"
+    - "TS/SCI"
+  
+  credential:
+    - "password"
+    - "api key"
+    - "access token"
+    - "secret key"
+
+# Safety settings
+safety:
+  input_checking: enabled
+  output_checking: enabled
+  jailbreak_detection: enabled
+  
+  # Toxicity thresholds (0-1)
+  toxicity:
+    threshold: 0.7
+  
+  # Fact-checking (if enabled)
+  fact_checking:
+    enabled: false  # Disable for air-gapped environments
+
+# Logging
+logging:
+  level: INFO
+  audit_all_interactions: true
+  log_path: /var/log/fedchat/guardrails.log
+  include_user_id: true
+  include_timestamps: true
+
+# FISMA-specific settings
+fisma:
+  classification_level: MODERATE
+  data_retention_days: 2555  # 7 years
+  require_user_authentication: true
+  enable_export_controls: true

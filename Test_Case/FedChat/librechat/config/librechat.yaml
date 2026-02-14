@@ -1,0 +1,193 @@
+# LibreChat Configuration for Federal Environment
+version: 1.0.9
+
+# Cache settings
+cache: true
+
+# Interface configuration
+interface:
+  # Privacy-focused: no analytics, no external tracking
+  privacyPolicy:
+    externalUrl: "https://agency.gov/privacy"
+    openNewTab: true
+  termsOfService:
+    externalUrl: "https://agency.gov/terms"
+    openNewTab: true
+    modalAcceptance: true
+  
+  # AC-8: System Use Notification (NIST SP 800-53 Rev 5)
+  systemUseNotification:
+    enabled: true
+    modalAcceptance: true
+    title: "U.S. Government System - Authorized Use Only"
+    content: |
+      **WARNING**
+      
+      You are accessing a U.S. Government information system, which includes:
+      - This computer
+      - This computer network
+      - All computers connected to this network
+      - All devices and storage media attached to this network or to a computer on this network
+      
+      This information system is provided for U.S. Government-authorized use only.
+      
+      **Unauthorized or improper use of this system may result in:**
+      - Disciplinary action
+      - Civil penalties
+      - Criminal prosecution
+      
+      **By using this information system, you understand and consent to the following:**
+      - You have no reasonable expectation of privacy regarding any communications or data transiting or stored on this information system
+      - At any time, the government may monitor, intercept, search, and seize any communication or data transiting or stored on this information system
+      - Any communications or data transiting or stored on this information system may be disclosed or used for any lawful government purpose
+      - Use of this system constitutes consent to monitoring for all lawful purposes
+      
+      **[AGENCY NAME]** may modify this warning at any time.
+
+# Registration and Authentication
+registration:
+  # Disable public registration for federal use
+  socialLogins: []
+  allowedDomains:
+    - "agency.gov"
+    - "agency.mil"
+
+# Endpoints configuration
+endpoints:
+  custom:
+    - name: "Federal AI Assistant"
+      apiKey: "${BACKEND_API_KEY}"
+      baseURL: "http://backend:8000/v1"
+      models:
+        default: ["llama3-70b", "llama3-8b", "mistral-7b"]
+      titleConvo: true
+      titleModel: "llama3-8b"
+      summarize: false
+      summaryModel: "llama3-8b"
+      forcePrompt: false
+      modelDisplayLabel: "Federal LLM"
+      addParams:
+        "max_tokens": 4096
+        "temperature": 0.7
+        "top_p": 0.9
+        "frequency_penalty": 0.0
+        "presence_penalty": 0.0
+
+# RAG (File handling)
+fileConfig:
+  endpoints:
+    assistants:
+      fileLimit: 5
+      fileSizeLimit: 50  # MB
+      supportedMimeTypes:
+        - "application/pdf"
+        - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        - "text/plain"
+        - "text/markdown"
+        - "text/csv"
+      disabled: false
+  serverFileSizeLimit: 50
+  avatarSizeLimit: 2
+
+# Model specifications
+modelSpecs:
+  enforce: true
+  list:
+    - name: "llama3-70b"
+      label: "Llama 3 70B (High Quality)"
+      description: "Recommended for complex reasoning and analysis"
+      default: true
+      iconURL: "https://avatars.githubusercontent.com/u/151674099"
+      pricing:
+        prompt: "0"
+        completion: "0"
+      maxTokens: 8192
+    - name: "llama3-8b"
+      label: "Llama 3 8B (Balanced)"
+      description: "Good balance of speed and quality"
+      iconURL: "https://avatars.githubusercontent.com/u/151674099"
+      pricing:
+        prompt: "0"
+        completion: "0"
+      maxTokens: 8192
+    - name: "mistral-7b"
+      label: "Mistral 7B (Fast)"
+      description: "Fastest response time"
+      iconURL: "https://avatars.githubusercontent.com/u/132372032"
+      pricing:
+        prompt: "0"
+        completion: "0"
+      maxTokens: 8192
+
+# Rate limiting
+rateLimits:
+  fileUploads:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60
+  conversationsImport:
+    ipMax: 20
+    ipWindowInMinutes: 60
+    userMax: 10
+    userWindowInMinutes: 60
+
+# Security settings
+securityHeaders:
+  enabled: true
+  strictTransportSecurity: "max-age=31536000; includeSubDomains"
+  contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+  xContentTypeOptions: "nosniff"
+  xFrameOptions: "DENY"
+  xXSSProtection: "1; mode=block"
+
+# Audit logging
+auditLog:
+  enabled: true
+  logLevel: "comprehensive"
+  logPath: "/var/log/fedchat/librechat-audit.log"
+  includeUserData: true
+  includeChatData: true
+  includeSystemData: true
+
+# Customization
+customization:
+  appTitle: "${LIBRECHAT_TITLE}"
+  helpAndFaqURL: "https://agency.gov/ai-assistant/help"
+  customFooter: "For Official Use Only - FISMA Moderate System"
+  showBirthdayIcon: false
+  theme:
+    primaryColor: "${AGENCY_PRIMARY_COLOR}"
+    secondaryColor: "${AGENCY_SECONDARY_COLOR}"
+    logoPath: "/assets/agency-logo.png"
+    faviconPath: "/assets/favicon.ico"
+
+# Disable features not suitable for federal environment
+features:
+  # Core features
+  chat: true
+  assistants: true
+  
+  # Disabled features
+  plugins: false
+  webSearch: false  # Can be enabled with approved APIs
+  codeInterpreter: false  # Can be enabled if sandboxed properly
+  imageGeneration: false
+  voiceChat: false
+  
+  # Federal-appropriate features
+  fileUpload: true
+  conversationExport: true
+  conversationShare: false  # Internal sharing only
+  feedback: true
+  
+# Language settings
+language:
+  default: "en-US"
+  available: ["en-US"]
+
+# Data retention (FISMA compliance)
+dataRetention:
+  conversations: 2555  # 7 years in days
+  uploads: 2555
+  analytics: 0  # No analytics

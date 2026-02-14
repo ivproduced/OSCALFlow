@@ -1,0 +1,286 @@
+# Security Context Constraint for FedChat
+# This SCC allows non-root execution with specific capabilities
+# Cluster admin privileges required to create SCCs
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: fedchat-scc
+  annotations:
+    kubernetes.io/description: "SCC for FedChat application pods with restricted permissions"
+priority: 10
+allowPrivilegedContainer: false
+allowPrivilegeEscalation: false
+requiredDropCapabilities:
+- ALL
+allowedCapabilities: []
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+readOnlyRootFilesystem: false  # Set to true if your containers support it
+runAsUser:
+  type: MustRunAsRange
+  uidRangeMin: 1000
+  uidRangeMax: 65534
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+fsGroup:
+  type: MustRunAs
+  ranges:
+  - min: 1000
+    max: 65534
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+users: []
+groups: []
+---
+# Role to use the SCC
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fedchat-scc-role
+  namespace: fedchat
+rules:
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  resourceNames:
+  - fedchat-scc
+  verbs:
+  - use
+---
+# Bind the role to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fedchat-scc-rolebinding
+  namespace: fedchat
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: fedchat-scc-role
+subjects:
+- kind: ServiceAccount
+  name: fedchat-sa
+  namespace: fedchat
+---
+# Network Policy - Default Deny All
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: fedchat
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Network Policy - Allow internal communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal
+  namespace: fedchat
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}
+  egress:
+  - to:
+    - podSelector: {}
+---
+# Network Policy - Allow DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: fedchat
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-dns
+    ports:
+    - protocol: UDP
+      port: 5353
+    - protocol: TCP
+      port: 5353
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# Network Policy - Backend to Postgres
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-to-postgres
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+# Network Policy - Backend to Redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-to-redis
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 6379
+---
+# Network Policy - Backend to Ollama
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-to-ollama
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: ollama
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 11434
+---
+# Network Policy - Allow external HTTPS (for FedRAMP/external APIs)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-https
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+---
+# Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: fedchat-quota
+  namespace: fedchat
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    persistentvolumeclaims: "10"
+    pods: "50"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+---
+# Limit Range
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: fedchat-limits
+  namespace: fedchat
+spec:
+  limits:
+  - max:
+      memory: "8Gi"
+      cpu: "4"
+    min:
+      memory: "128Mi"
+      cpu: "100m"
+    default:
+      memory: "1Gi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "512Mi"
+      cpu: "250m"
+    type: Container
+  - max:
+      storage: "100Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim
+---
+# Pod Disruption Budget - Backend
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fedchat-backend-pdb
+  namespace: fedchat
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: backend
+---
+# Pod Disruption Budget - Frontend
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fedchat-frontend-pdb
+  namespace: fedchat
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend

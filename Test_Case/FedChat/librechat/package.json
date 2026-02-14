@@ -1,0 +1,20 @@
+{
+  "name": "fedchat-librechat",
+  "version": "1.0.0",
+  "description": "LibreChat customized for federal FISMA Moderate environment",
+  "private": true,
+  "scripts": {
+    "frontend": "cd client && npm run build",
+    "backend": "node api/server/index.js",
+    "dev": "concurrently \"npm run frontend:dev\" \"npm run backend:dev\"",
+    "frontend:dev": "cd client && npm run dev",
+    "backend:dev": "nodemon api/server/index.js"
+  },
+  "dependencies": {
+    "librechat": "^0.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,126 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: fedchat
+  namespace: fedchat
+  labels:
+    app: fedchat
+  annotations:
+    haproxy.router.openshift.io/timeout: 60s
+spec:
+  host: fedchat.apps.your-cluster.com  # Update with your OpenShift cluster domain
+  to:
+    kind: Service
+    name: fedchat-frontend
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge  # TLS termination at the router
+    insecureEdgeTerminationPolicy: Redirect  # Force HTTPS
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: fedchat-api
+  namespace: fedchat
+  labels:
+    app: fedchat
+  annotations:
+    haproxy.router.openshift.io/timeout: 300s  # Longer timeout for API calls
+    haproxy.router.openshift.io/rate-limit-connections: "true"
+    haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp: "100"
+spec:
+  host: fedchat.apps.your-cluster.com  # Same host as frontend
+  path: /api
+  to:
+    kind: Service
+    name: fedchat-backend
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: fedchat-metrics
+  namespace: fedchat
+  labels:
+    app: fedchat
+  annotations:
+    haproxy.router.openshift.io/ip_whitelist: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"  # Internal networks only
+spec:
+  host: fedchat-metrics.apps.your-cluster.com  # Separate host for metrics
+  to:
+    kind: Service
+    name: fedchat-backend
+    weight: 100
+  port:
+    targetPort: metrics
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+---
+# Alternative: Re-encrypt termination for end-to-end encryption
+# Uncomment if your backend services support TLS
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: fedchat-secure
+#   namespace: fedchat
+# spec:
+#   host: fedchat-secure.apps.your-cluster.com
+#   to:
+#     kind: Service
+#     name: fedchat-frontend
+#     weight: 100
+#   port:
+#     targetPort: https  # Backend service must expose HTTPS
+#   tls:
+#     termination: reencrypt
+#     insecureEdgeTerminationPolicy: Redirect
+#     destinationCACertificate: |
+#       -----BEGIN CERTIFICATE-----
+#       # Backend CA certificate
+#       -----END CERTIFICATE-----
+---
+# NetworkPolicy to allow traffic from OpenShift Router
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-ingress
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-from-openshift-ingress
+  namespace: fedchat
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress

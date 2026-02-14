@@ -1,0 +1,45 @@
+# Red Hat Universal Base Image (UBI) Dockerfile
+# Free to use, FedRAMP compatible, regularly updated
+# No authentication required
+
+FROM registry.access.redhat.com/ubi9/python-311:latest
+
+# Switch to root for installation
+USER 0
+
+WORKDIR /app
+
+# UBI uses dnf package manager
+RUN dnf install -y \
+    gcc \
+    postgresql-devel \
+    git \
+    curl \
+    && dnf clean all
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create cache directories with proper permissions
+RUN mkdir -p /app/.cache/nist_rag /app/.cache/policy_rag && \
+    chown -R 1001:0 /app && \
+    chmod -R g+rwX /app && \
+    mkdir -p /var/log/fedchat && \
+    chown -R 1001:0 /var/log/fedchat
+
+# Switch to non-root user (UBI standard is 1001)
+USER 1001
+
+# Expose application ports
+EXPOSE 8000 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Run application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

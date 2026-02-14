@@ -1,0 +1,187 @@
+[
+  {
+    "file": "docker-compose.yml",
+    "control": "SC-2",
+    "evidence": "Application partitions system components via Docker Compose orchestration"
+  },
+  {
+    "file": "backend/middleware/audit.py",
+    "control": "AU-2",
+    "evidence": "Audit event determination via centralized audit middleware"
+  },
+  {
+    "file": "backend/middleware/audit.py",
+    "control": "AU-3",
+    "evidence": "Audit record content generation with timestamp, user, and event details"
+  },
+  {
+    "file": "backend/middleware/audit.py",
+    "control": "AU-12",
+    "evidence": "Audit record generation via application-level logging middleware"
+  },
+  {
+    "file": "backend/middleware/rate_limit.py",
+    "control": "SC-5",
+    "evidence": "Denial-of-service protection via rate limiting middleware"
+  },
+  {
+    "file": "backend/middleware/security.py",
+    "control": "AC-6",
+    "evidence": "Least privilege enforcement via security middleware"
+  },
+  {
+    "file": "backend/middleware/system_use_banner.py",
+    "control": "AC-8",
+    "evidence": "System use notification displayed via middleware banner"
+  },
+  {
+    "file": ".gitignore",
+    "control": "CM-7",
+    "evidence": "Least functionality principle via exclusion of unnecessary files from version control"
+  },
+  {
+    "file": ".env.example",
+    "control": "SC-12",
+    "evidence": "Cryptographic key management via environment variable configuration"
+  },
+  {
+    "file": "kubernetes/",
+    "control": "SC-2",
+    "evidence": "Application partitioning via Kubernetes namespace isolation"
+  },
+  {
+    "file": "kubernetes/01-postgres.yaml",
+    "control": "SC-6",
+    "evidence": "Resource availability via Kubernetes resource quotas and limits"
+  },
+  {
+    "file": "kubernetes/02-redis.yaml",
+    "control": "SC-6",
+    "evidence": "Resource availability via Kubernetes resource quotas and limits"
+  },
+  {
+    "file": "kubernetes/03-ollama.yaml",
+    "control": "SC-6",
+    "evidence": "Resource availability via Kubernetes resource quotas and limits"
+  },
+  {
+    "file": "kubernetes/04-backend.yaml",
+    "control": "SC-6",
+    "evidence": "Resource availability via Kubernetes resource quotas and limits"
+  },
+  {
+    "file": "kubernetes/05-frontend.yaml",
+    "control": "SC-6",
+    "evidence": "Resource availability via Kubernetes resource quotas and limits"
+  },
+  {
+    "file": "kubernetes/07-security-policies.yaml",
+    "control": "SC-7",
+    "evidence": "Boundary protection via Kubernetes NetworkPolicy configuration"
+  },
+  {
+    "file": "README.md",
+    "control": "SA-5",
+    "evidence": "System documentation maintained in repository"
+  },
+  {
+    "file": "docs/DEPLOYMENT.md",
+    "control": "SA-5",
+    "evidence": "System deployment and operational documentation"
+  },
+  {
+    "file": "docs/FISMA_COMPLIANCE.md",
+    "control": "CA-2",
+    "evidence": "Security assessment documentation per FISMA requirements"
+  },
+  {
+    "file": "docs/ato/PRIVACY_IMPACT_ASSESSMENT.md",
+    "control": "AP-2",
+    "evidence": "Privacy impact assessment documented for PII handling"
+  },
+  {
+    "file": "docs/ato/RISK_ASSESSMENT.md",
+    "control": "RA-3",
+    "evidence": "Risk assessment documentation maintained for security authorization"
+  },
+  {
+    "file": "docs/ato/SYSTEM_SECURITY_PLAN_TEMPLATE.md",
+    "control": "PL-2",
+    "evidence": "System security plan documentation maintained"
+  },
+  {
+    "file": "backend/services/auth_service.py",
+    "control": "IA-2",
+    "evidence": "User identification and authentication via JWT token-based system"
+  },
+  {
+    "file": "backend/services/auth_service.py",
+    "control": "IA-5",
+    "evidence": "Authenticator management via password hashing (bcrypt)"
+  },
+  {
+    "file": "backend/services/auth_service.py",
+    "control": "AC-2",
+    "evidence": "Account management implementation for user creation and administration"
+  },
+  {
+    "file": "backend/services/auth_service.py",
+    "control": "AC-11",
+    "evidence": "Device lock via session timeout configured through JWT expiration"
+  },
+  {
+    "file": "backend/services/auth_service.py",
+    "control": "AC-12",
+    "evidence": "Session termination via JWT token expiration mechanism"
+  },
+  {
+    "file": "backend/services/guardrails_service.py",
+    "control": "SI-10",
+    "evidence": "Information input validation via guardrails service sanitization"
+  },
+  {
+    "file": "backend/services/guardrails_service.py",
+    "control": "SI-12",
+    "evidence": "Information handling via PII detection and redaction mechanisms"
+  },
+  {
+    "file": "backend/services/agent_service.py",
+    "control": "SI-4",
+    "evidence": "System monitoring via structured logging implementation"
+  },
+  {
+    "file": "backend/core/config.py",
+    "control": "CM-6",
+    "evidence": "Configuration settings management via centralized configuration module"
+  },
+  {
+    "file": ".env.example",
+    "control": "CM-2",
+    "evidence": "Baseline configuration documented via environment variable template"
+  },
+  {
+    "file": ".env.example",
+    "control": "SC-8",
+    "evidence": "Transmission confidentiality via HTTPS/TLS configuration"
+  },
+  {
+    "file": "backend/api/dependencies.py",
+    "control": "SI-11",
+    "evidence": "Error handling and information disclosure prevention via exception handling"
+  },
+  {
+    "file": "backend/core/database.py",
+    "control": "SC-28",
+    "evidence": "Protection of information at rest via database encryption and secure connections"
+  },
+  {
+    "file": "backend/api/dependencies.py",
+    "control": "AC-3",
+    "evidence": "Access enforcement via authentication and authorization dependencies"
+  },
+  {
+    "file": "backend/api/dependencies.py",
+    "control": "IA-4",
+    "evidence": "Identifier management via user and API key authentication"
+  }
+]

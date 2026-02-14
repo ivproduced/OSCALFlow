@@ -1,0 +1,27 @@
+[
+  {
+    "file": "docker-compose.yml",
+    "control": "SC-2",
+    "evidence": "Application partitions system components via Docker Compose orchestration"
+  },
+  {
+    "file": ".gitignore",
+    "control": "CM-7",
+    "evidence": "Least functionality principle via exclusion of unnecessary files from version control"
+  },
+  {
+    "file": ".env.example",
+    "control": "SC-12",
+    "evidence": "Cryptographic key management via environment variable configuration"
+  },
+  {
+    "file": "k8s/",
+    "control": "SC-2",
+    "evidence": "Application partitioning via Kubernetes namespace isolation"
+  },
+  {
+    "file": "README.md",
+    "control": "SA-5",
+    "evidence": "System documentation maintained in repository"
+  }
+]

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+*.js.map
+
+# Environment
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test output
+coverage/
+*.log
+
+# Internal documentation and planning
+.internal/
+
+# Generated OSCAL files and test outputs
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!examples/**/*.json
+!src/templates/**/*.json
+!data/**/*.json
+!Test_Case/**/*.json
+
+# Build artifacts
+gh-oscal-cli

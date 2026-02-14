@@ -1,0 +1,12 @@
+# Ignore large dataset files - users must download separately
+*.arrow
+dataset_info.json
+state.json
+
+# Ignore auto-generated FAISS index files
+index.faiss
+index.pkl
+
+# Keep directory structure
+!README.md
+!.gitignore

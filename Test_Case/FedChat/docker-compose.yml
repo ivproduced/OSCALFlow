@@ -1,0 +1,260 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with pgvector extension
+  database:
+    image: pgvector/pgvector:pg16
+    container_name: fedchat-database
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fedchat}
+      POSTGRES_USER: ${POSTGRES_USER:-fedchat_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.utf8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fedchat_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: fedchat-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changethis}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  # Ollama for local LLM inference (optional - comment out if using cloud providers)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: fedchat-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend with LangChain/LangGraph
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fedchat-backend
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changethis}@redis:6379/0
+      - LLM_PROVIDER=${LLM_PROVIDER:-local}
+      - LOCAL_LLM_BASE_URL=http://ollama:11434
+      - LOCAL_LLM_MODEL=${LOCAL_LLM_MODEL:-llama3:70b}
+      - ENABLE_RAG=${ENABLE_RAG:-true}
+      - ENABLE_GUARDRAILS=${ENABLE_GUARDRAILS:-true}
+      - ENABLE_MCP=${ENABLE_MCP:-true}
+      - ENABLED_MCP_SERVERS=${ENABLED_MCP_SERVERS:-filesystem,database,api-client}
+      # NIST RAG Integration
+      - ENABLE_NIST_RAG=${ENABLE_NIST_RAG:-true}
+      - NIST_RAG_CACHE_DIR=/app/.cache/nist_rag
+      - NIST_USE_HUGGINGFACE=${NIST_USE_HUGGINGFACE:-true}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Policy RAG Integration
+      - ENABLE_POLICY_RAG=${ENABLE_POLICY_RAG:-true}
+      - POLICY_REPO_URL=${POLICY_REPO_URL:-https://github.com/0xdefendA/policies.git}
+      - POLICY_RAG_CACHE_DIR=/app/.cache/policy_rag
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - AUDIT_LOG_LEVEL=${AUDIT_LOG_LEVEL:-comprehensive}
+      - PYTHONUNBUFFERED=1
+      # ServiceNow Integration (optional)
+      - SERVICENOW_INSTANCE_URL=${SERVICENOW_INSTANCE_URL:-}
+      - SERVICENOW_USERNAME=${SERVICENOW_USERNAME:-}
+      - SERVICENOW_PASSWORD=${SERVICENOW_PASSWORD:-}
+      # Splunk Integration (optional)
+      - SPLUNK_HOST=${SPLUNK_HOST:-}
+      - SPLUNK_PORT=${SPLUNK_PORT:-8089}
+      - SPLUNK_API_TOKEN=${SPLUNK_API_TOKEN:-}
+    volumes:
+      - ./backend:/app
+      - ./documents:/data/documents
+      - ./logs:/var/log/fedchat
+      - ./guardrails:/app/guardrails:ro
+      - ./mcp-servers:/app/mcp-servers:ro
+      - nist_cache:/app/.cache/nist_rag  # NIST RAG dataset and index cache
+      - policy_cache:/app/.cache/policy_rag  # Policy RAG repository and index cache
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Metrics endpoint
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  # LibreChat Frontend
+  librechat:
+    build:
+      context: ./librechat
+      dockerfile: Dockerfile
+      args:
+        - AGENCY_NAME=${AGENCY_NAME}
+        - AGENCY_PRIMARY_COLOR=${AGENCY_PRIMARY_COLOR}
+    container_name: fedchat-librechat
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - API_URL=http://backend:8000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - LIBRECHAT_TITLE=${LIBRECHAT_TITLE}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
+      - ENABLE_SAML=${ENABLE_SAML:-false}
+    volumes:
+      - ./librechat/config:/app/config
+      - ./librechat/assets:/app/public/assets
+      - ./logs:/var/log/fedchat
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - database
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  # Nginx reverse proxy (optional, recommended for production)
+  nginx:
+    image: nginx:alpine
+    container_name: fedchat-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - librechat
+      - backend
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  # Prometheus for monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fedchat-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9091:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fedchat-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - fedchat-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  fedchat-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ollama_data:
+    driver: local
+  nist_cache:
+    driver: local
+  policy_cache:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
