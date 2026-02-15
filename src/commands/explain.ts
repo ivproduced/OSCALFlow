@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
+import { loadOscalFlowConfig } from '../lib/config.js';
+import { printWithOptionalPager } from '../lib/output.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -250,8 +252,13 @@ export const explainCommand = new Command('explain')
   .argument('<control-id>', 'Control ID (e.g., AC-2, SC-8)')
   .option('--for-devs', 'Use developer-friendly language and examples', true)
   .option('--json', 'Output as JSON')
+  .option('--pager', 'Show output in pager (less)')
+  .option('--no-tips', 'Suppress tips and guidance text')
   .action(async (controlId, options) => {
     try {
+      const { config } = loadOscalFlowConfig(process.cwd());
+      const usePager = Boolean(options.pager || config.pager);
+      const showTips = options.tips && !config.suppressTips;
       const control = getControlInfo(controlId.toUpperCase());
       
       if (!control) {
@@ -267,30 +274,31 @@ export const explainCommand = new Command('explain')
         return;
       }
       
-      // Format output for developers
-      console.log(chalk.cyan(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`));
-      console.log(chalk.bold.white(`\n${control.id}: ${control.title}`));
-      console.log(chalk.cyan(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`));
-      
-      console.log(chalk.bold('Official Description:'));
-      console.log(chalk.gray(control.description));
+      const lines: string[] = [];
+      lines.push(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+      lines.push(chalk.bold.white(`\n${control.id}: ${control.title}`));
+      lines.push(chalk.cyan('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
+      lines.push(chalk.bold('Official Description:'));
+      lines.push(chalk.gray(control.description));
       
       if (options.forDevs) {
-        console.log(chalk.bold('\n💡 What This Means for Developers:'));
-        console.log(chalk.white(control.developerGuidance));
-        
-        console.log(chalk.bold('\n📝 Implementation Examples:\n'));
+        lines.push(chalk.bold('\n💡 What This Means for Developers:'));
+        lines.push(chalk.white(control.developerGuidance));
+        lines.push(chalk.bold('\n📝 Implementation Examples:\n'));
         control.examples.forEach((example, idx) => {
-          console.log(chalk.green(`  ${idx + 1}. ${example}`));
+          lines.push(chalk.green(`  ${idx + 1}. ${example}`));
         });
       }
       
-      console.log(chalk.bold('\n🔗 Related Controls:'));
-      console.log(chalk.cyan(`  ${control.relatedControls.join(', ')}`));
-      
-      console.log(chalk.cyan(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`));
-      
-      console.log(chalk.yellow(`💡 Tip: Run 'gh oscal scan .' to see if your project implements this control\n`));
+      lines.push(chalk.bold('\n🔗 Related Controls:'));
+      lines.push(chalk.cyan(`  ${control.relatedControls.join(', ')}`));
+      lines.push(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
+
+      if (showTips) {
+        lines.push(chalk.yellow("💡 Tip: Run 'gh oscal scan .' to see if your project implements this control\n"));
+      }
+
+      printWithOptionalPager(lines.join('\n'), usePager);
       
     } catch (error) {
       console.error(chalk.red('\nError explaining control:'), error);

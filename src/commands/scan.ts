@@ -3,38 +3,78 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
-import { scanRepository, formatSignalsSummary } from '../lib/scanner.js';
+import type { Ora } from 'ora';
+import {
+  scanRepository,
+  formatSignalsSummary,
+  filterSignalsByDetectors,
+  DETECTOR_NAMES,
+  type DetectorName
+} from '../lib/scanner.js';
 import { updateSSPWithSignals } from '../lib/mapper.js';
+import { loadOscalFlowConfig, parseDetectorList } from '../lib/config.js';
+import { printWithOptionalPager } from '../lib/output.js';
 
 export const scanCommand = new Command('scan')
   .description('Scan repository for compliance signals and update SSP')
   .argument('[path]', 'Repository path to scan', '.')
   .option('-u, --update <file>', 'SSP file to update with findings')
   .option('-o, --output <file>', 'Output file for scan results')
+  .option('--enable <detectors>', `Comma-separated detectors to enable (${DETECTOR_NAMES.join(', ')})`)
+  .option('--disable <detectors>', `Comma-separated detectors to disable (${DETECTOR_NAMES.join(', ')})`)
+  .option('-q, --quiet', 'Reduce console output')
+  .option('--no-tips', 'Suppress tips and guidance text')
+  .option('--pager', 'Show summary using pager (less)')
   .action(async (repoPath, options) => {
-    const spinner = ora('Scanning repository for compliance signals...').start();
+    const absolutePath = path.resolve(repoPath);
+    const { config } = loadOscalFlowConfig(absolutePath);
+    const quiet = Boolean(options.quiet || config.quiet);
+    const showTips = options.tips && !config.suppressTips;
+    const usePager = Boolean(options.pager || config.pager);
+    const enabledDetectors: DetectorName[] = Array.from(
+      new Set<DetectorName>([...(config.enabledDetectors ?? []), ...parseDetectorList(options.enable)])
+    );
+    const disabledDetectors: DetectorName[] = Array.from(
+      new Set<DetectorName>([...(config.disabledDetectors ?? []), ...parseDetectorList(options.disable)])
+    );
+
+    const outputPath = options.output ?? config.scanOutput;
+    let spinner: Ora | null = null;
+
+    if (!quiet) {
+      spinner = ora('Scanning repository for compliance signals...').start();
+    }
     
     try {
-      // Resolve path
-      const absolutePath = path.resolve(repoPath);
-      
       if (!fs.existsSync(absolutePath)) {
-        spinner.fail(chalk.red(`Path not found: ${absolutePath}`));
+        if (spinner) {
+          spinner.fail(chalk.red(`Path not found: ${absolutePath}`));
+        } else {
+          console.error(chalk.red(`Path not found: ${absolutePath}`));
+        }
         process.exit(1);
       }
       
-      // Scan repository
-      const signals = await scanRepository(absolutePath);
+      let signals = await scanRepository(absolutePath);
+      signals = filterSignalsByDetectors(signals, enabledDetectors, disabledDetectors);
       
       if (signals.length === 0) {
-        spinner.warn(chalk.yellow('No compliance signals detected'));
-        console.log(chalk.gray('\nTip: Add Dockerfile, CI/CD workflows, or security libraries to improve detection'));
+        if (spinner) {
+          spinner.warn(chalk.yellow('No compliance signals detected'));
+        } else {
+          console.log(chalk.yellow('No compliance signals detected'));
+        }
+
+        if (showTips && !quiet) {
+          console.log(chalk.gray('\nTip: Add Dockerfile, CI/CD workflows, or security libraries to improve detection'));
+        }
         return;
       }
       
-      spinner.succeed(chalk.green(`Found ${signals.length} compliance signal${signals.length !== 1 ? 's' : ''}`));
+      if (spinner) {
+        spinner.succeed(chalk.green(`Found ${signals.length} compliance signal${signals.length !== 1 ? 's' : ''}`));
+      }
       
-      // Calculate statistics
       const uniqueControls = new Set(signals.map(s => s.control));
       const controlFamilies = Array.from(uniqueControls).reduce((acc, control) => {
         const family = control.split('-')[0];
@@ -45,21 +85,21 @@ export const scanCommand = new Command('scan')
       const totalControls = 243; // MODERATE baseline
       const detectedCount = uniqueControls.size;
       const coveragePercent = ((detectedCount / totalControls) * 100).toFixed(1);
-      const timeSaved = (detectedCount * 0.5).toFixed(1); // 30 min per control
+      const timeSaved = (detectedCount * 0.5).toFixed(1);
       
-      // Display summary dashboard
-      console.log(chalk.cyan('\n📊 Coverage Summary:'));
-      console.log(chalk.white(`   ├─ Total Controls (MODERATE): ${totalControls}`));
-      console.log(chalk.green(`   ├─ Auto-Detected: ${detectedCount} (${coveragePercent}%)`));
-      console.log(chalk.yellow(`   ├─ Needs Documentation: ${totalControls - detectedCount} (${(100 - parseFloat(coveragePercent)).toFixed(1)}%)`));
-      console.log(chalk.magenta(`   └─ Time Saved: ~${timeSaved} hours\n`));
+      if (!quiet) {
+        console.log(chalk.cyan('\n📊 Coverage Summary:'));
+        console.log(chalk.white(`   ├─ Total Controls (MODERATE): ${totalControls}`));
+        console.log(chalk.green(`   ├─ Auto-Detected: ${detectedCount} (${coveragePercent}%)`));
+        console.log(chalk.yellow(`   ├─ Needs Documentation: ${totalControls - detectedCount} (${(100 - parseFloat(coveragePercent)).toFixed(1)}%)`));
+        console.log(chalk.magenta(`   └─ Time Saved: ~${timeSaved} hours\n`));
+      }
       
-      // Display control families
       const sortedFamilies = Object.entries(controlFamilies)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
       
-      if (sortedFamilies.length > 0) {
+      if (!quiet && sortedFamilies.length > 0) {
         console.log(chalk.cyan('🏆 Top Control Families Detected:'));
         sortedFamilies.forEach(([family, count], idx) => {
           const familyNames: Record<string, string> = {
@@ -81,18 +121,27 @@ export const scanCommand = new Command('scan')
         });
         console.log('');
       }
+
+      if (!quiet) {
+        const summaryText = `${chalk.cyan('Compliance Signals Detected:\n')}\n${formatSignalsSummary(signals)}`;
+        printWithOptionalPager(summaryText, usePager);
+      } else {
+        console.log(`Detected ${detectedCount} controls (${coveragePercent}% of MODERATE baseline)`);
+      }
       
-      // Display findings
-      console.log(chalk.cyan('Compliance Signals Detected:\n'));
-      console.log(formatSignalsSummary(signals));
-      
-      // Update SSP if requested
       if (options.update) {
-        const updateSpinner = ora(`Updating ${options.update}...`).start();
+        const updateSpinner = quiet ? null : ora(`Updating ${options.update}...`).start();
         
         if (!fs.existsSync(options.update)) {
-          updateSpinner.fail(chalk.red(`SSP file not found: ${options.update}`));
-          console.log(chalk.yellow('\nTip: Run \'gh oscal generate\' first to create an SSP skeleton'));
+          if (updateSpinner) {
+            updateSpinner.fail(chalk.red(`SSP file not found: ${options.update}`));
+          } else {
+            console.error(chalk.red(`SSP file not found: ${options.update}`));
+          }
+
+          if (showTips && !quiet) {
+            console.log(chalk.yellow('\nTip: Run \'gh oscal generate\' first to create an SSP skeleton'));
+          }
           process.exit(1);
         }
         
@@ -101,19 +150,38 @@ export const scanCommand = new Command('scan')
         
         fs.writeFileSync(options.update, JSON.stringify(updatedSSP, null, 2));
         
-        // Count updated controls
         const uniqueControlsUpdated = new Set(signals.map(s => s.control));
-        updateSpinner.succeed(chalk.green(`Updated ${uniqueControlsUpdated.size} control implementation${uniqueControlsUpdated.size !== 1 ? 's' : ''} in ${options.update}`));
+        const updateMessage = `Updated ${uniqueControlsUpdated.size} control implementation${uniqueControlsUpdated.size !== 1 ? 's' : ''} in ${options.update}`;
+        if (updateSpinner) {
+          updateSpinner.succeed(chalk.green(updateMessage));
+        } else {
+          console.log(chalk.green(updateMessage));
+        }
       }
       
-      // Save scan results if output specified
-      if (options.output) {
-        fs.writeFileSync(options.output, JSON.stringify(signals, null, 2));
-        console.log(chalk.cyan(`\n✓ Scan results saved to: ${options.output}`));
+      if (outputPath) {
+        fs.writeFileSync(outputPath, JSON.stringify(signals, null, 2));
+        if (!quiet) {
+          console.log(chalk.cyan(`\n✓ Scan results saved to: ${outputPath}`));
+        }
+      }
+
+      if (!quiet && (enabledDetectors.length > 0 || disabledDetectors.length > 0)) {
+        console.log(chalk.gray('\nDetector filters applied:'));
+        if (enabledDetectors.length > 0) {
+          console.log(chalk.gray(`  enabled: ${enabledDetectors.join(', ')}`));
+        }
+        if (disabledDetectors.length > 0) {
+          console.log(chalk.gray(`  disabled: ${disabledDetectors.join(', ')}`));
+        }
       }
       
     } catch (error) {
-      spinner.fail(chalk.red('Scan failed'));
+      if (spinner) {
+        spinner.fail(chalk.red('Scan failed'));
+      } else {
+        console.error(chalk.red('Scan failed'));
+      }
       console.error(error);
       process.exit(1);
     }

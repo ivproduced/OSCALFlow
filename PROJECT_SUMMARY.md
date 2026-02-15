@@ -1,5 +1,15 @@
 # 🎉 gh-oscal - CLI Tool Successfully Built!
 
+## Release Update (2026-02-14)
+
+Version 1.1.0 adds final pre-submission enhancements:
+- Repo-level config support via `.oscalflow.json`
+- Detector toggles in scan (`--enable`, `--disable`)
+- Quiet and tips suppression options for CI-friendly output
+- Optional pager support for long terminal output
+- New `gh oscal doctor` diagnostics command
+- Unit tests for config and detector filtering (`npm test`, 8 passing)
+
 ## Executive Summary
 
 A complete GitHub CLI extension for automating OSCAL compliance documentation has been successfully built and tested. The tool generates FedRAMP-ready System Security Plans (SSPs) in seconds, auto-detects compliance implementations from repositories, and translates NIST controls into developer-friendly language.

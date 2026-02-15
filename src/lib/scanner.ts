@@ -9,6 +9,162 @@ export interface ComplianceSignal {
   evidence: string;
 }
 
+export const DETECTOR_NAMES = [
+  'containers',
+  'cicd',
+  'dependencies',
+  'iac',
+  'secrets',
+  'security-tools',
+  'git-security',
+  'api',
+  'database',
+  'sbom',
+  'cloud'
+] as const;
+
+export type DetectorName = (typeof DETECTOR_NAMES)[number];
+
+export function classifySignal(signal: ComplianceSignal): DetectorName {
+  const file = signal.file.toLowerCase();
+  const evidence = signal.evidence.toLowerCase();
+
+  if (
+    file.includes('docker') ||
+    file.includes('kubernetes') ||
+    file.includes('openshift') ||
+    file.includes('helm')
+  ) {
+    return 'containers';
+  }
+
+  if (
+    file.includes('.github/workflows') ||
+    file.endsWith('.gitlab-ci.yml') ||
+    file.includes('.circleci') ||
+    file.endsWith('jenkinsfile') ||
+    file.endsWith('azure-pipelines.yml') ||
+    file.endsWith('.travis.yml') ||
+    file.endsWith('bitbucket-pipelines.yml') ||
+    file.includes('dependabot')
+  ) {
+    return 'cicd';
+  }
+
+  if (
+    file.endsWith('terraform.tf') ||
+    file.endsWith('.tf') ||
+    file.endsWith('.tfvars') ||
+    file.includes('cloudformation') ||
+    file.includes('ansible') ||
+    file.includes('arm-template') ||
+    file.endsWith('bicep')
+  ) {
+    return 'iac';
+  }
+
+  if (
+    file.includes('vault') ||
+    file.includes('secrets') ||
+    file.includes('keyvault') ||
+    file.includes('sealed-secrets') ||
+    evidence.includes('secret') ||
+    evidence.includes('key management')
+  ) {
+    return 'secrets';
+  }
+
+  if (
+    evidence.includes('snyk') ||
+    evidence.includes('trivy') ||
+    evidence.includes('sonarqube') ||
+    evidence.includes('fortify') ||
+    evidence.includes('checkmarx') ||
+    evidence.includes('owasp zap') ||
+    evidence.includes('gitleaks') ||
+    evidence.includes('gitguardian')
+  ) {
+    return 'security-tools';
+  }
+
+  if (
+    file.endsWith('codeowners') ||
+    evidence.includes('branch protection') ||
+    evidence.includes('gpg') ||
+    evidence.includes('signed commit')
+  ) {
+    return 'git-security';
+  }
+
+  if (
+    file.includes('openapi') ||
+    file.includes('swagger') ||
+    evidence.includes('api gateway') ||
+    evidence.includes('api security')
+  ) {
+    return 'api';
+  }
+
+  if (
+    file.includes('migration') ||
+    file.includes('database') ||
+    evidence.includes('database') ||
+    evidence.includes('backup')
+  ) {
+    return 'database';
+  }
+
+  if (
+    file.includes('cyclonedx') ||
+    file.includes('spdx') ||
+    file.endsWith('package-lock.json') ||
+    file.endsWith('yarn.lock') ||
+    file.endsWith('pnpm-lock.yaml') ||
+    file.endsWith('gemfile.lock') ||
+    file.endsWith('poetry.lock') ||
+    file.endsWith('cargo.lock') ||
+    evidence.includes('sbom')
+  ) {
+    return 'sbom';
+  }
+
+  if (
+    evidence.includes('aws') ||
+    evidence.includes('azure') ||
+    evidence.includes('gcp') ||
+    evidence.includes('cloudformation') ||
+    evidence.includes('resource manager')
+  ) {
+    return 'cloud';
+  }
+
+  return 'dependencies';
+}
+
+export function filterSignalsByDetectors(
+  signals: ComplianceSignal[],
+  enabled: DetectorName[],
+  disabled: DetectorName[]
+): ComplianceSignal[] {
+  const disabledSet = new Set<DetectorName>(disabled);
+  const enabledSet = new Set<DetectorName>(enabled);
+  const useEnabledSet = enabledSet.size > 0;
+
+  return signals.filter((signal) => {
+    const detector = classifySignal(signal);
+
+    if (disabledSet.has(detector)) {
+      return false;
+    }
+
+    if (useEnabledSet) {
+      return enabledSet.has(detector);
+    }
+
+    return true;
+  });
+}
+
 // Helper function to recursively get all files in a directory
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   try {

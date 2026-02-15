@@ -71,6 +71,7 @@ gh oscal generate --baseline moderate --system "Payment API"
 - `-b, --baseline <level>` - Impact baseline: `low` (119 controls), `moderate` (243 controls), or `high` (421 controls)
 - `-s, --system <name>` - System name
 - `-o, --output <file>` - Output file path (default: `ssp-draft.json`)
+- `-q, --quiet` - Reduce console output (CI-friendly)
 
 ### `gh oscal scan`
 
@@ -83,6 +84,11 @@ gh oscal scan . --update ssp-draft.json
 **Options:**
 - `-u, --update <file>` - SSP file to update with findings
 - `-o, --output <file>` - Save scan results to file
+- `--enable <detectors>` - Enable only selected detectors (comma-separated)
+- `--disable <detectors>` - Disable selected detectors (comma-separated)
+- `-q, --quiet` - Reduce console output (CI-friendly)
+- `--no-tips` - Suppress tips and guidance text
+- `--pager` - Show findings with pager (`less`)
 
 **Detects (150+ patterns):**
 - **Containers**: Docker, Kubernetes, OpenShift → SC-39, SC-2, SC-7
@@ -112,6 +118,40 @@ gh oscal explain AC-2 --for-devs
 - Developer-friendly translation
 - Implementation examples
 - Related controls
+
+**Additional options:**
+- `--pager` - Show explain output with pager (`less`)
+- `--no-tips` - Suppress tip text
+
+### `gh oscal doctor`
+
+Run diagnostics to validate environment and repository setup before scanning/generation.
+
+```bash
+gh oscal doctor .
+```
+
+Checks include tool availability, repo/.git write access, config discovery, and NIST data presence.
+
+### Repository Configuration (`.oscalflow.json`)
+
+OSCALFLOW now supports repo-level defaults:
+
+```json
+{
+  "baseline": "moderate",
+  "systemName": "Payment API",
+  "defaultOutput": "ssp-draft.json",
+  "scanOutput": "scan-results.json",
+  "quiet": false,
+  "suppressTips": true,
+  "pager": false,
+  "enabledDetectors": ["containers", "cicd", "dependencies"],
+  "disabledDetectors": ["sbom"]
+}
+```
+
+Detector names: `containers`, `cicd`, `dependencies`, `iac`, `secrets`, `security-tools`, `git-security`, `api`, `database`, `sbom`, `cloud`.
 
 ## 📊 What Gets Generated
 

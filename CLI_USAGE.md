@@ -35,6 +35,7 @@ gh oscal generate --baseline moderate --system "My API"
 - `-b, --baseline <level>`: `low`, `moderate`, or `high` (default: moderate)
 - `-s, --system <name>`: System name (default: Unnamed System)
 - `-o, --output <file>`: Output file (default: ssp-draft.json)
+- `-q, --quiet`: Reduce console output (CI-friendly)
 
 ### Scan Repository
 
@@ -50,6 +51,11 @@ gh oscal scan . --update ssp-draft.json
 **Options:**
 - `-u, --update <file>`: SSP file to update
 - `-o, --output <file>`: Save scan results
+- `--enable <detectors>`: Enable only selected detectors (comma-separated)
+- `--disable <detectors>`: Disable selected detectors (comma-separated)
+- `-q, --quiet`: Reduce console output (CI-friendly)
+- `--no-tips`: Suppress tips/guidance text
+- `--pager`: Show findings in pager (`less`)
 
 ### Explain Controls
 
@@ -65,6 +71,43 @@ gh oscal explain AC-2 --for-devs
 **Options:**
 - `--for-devs`: Developer-friendly output (default: true)
 - `--json`: Output as JSON
+- `--pager`: Show output in pager (`less`)
+- `--no-tips`: Suppress tips/guidance text
+
+### Doctor Diagnostics
+
+Run environment and repository checks before scanning/generating:
+
+```bash
+gh oscal doctor .
+```
+
+**Checks include:**
+- Node.js and tool availability (`gh`, `git`)
+- repository and `.git` write access
+- optional `.oscalflow.json` discovery
+- required NIST baseline data files
+
+## ⚙️ Repository Config (`.oscalflow.json`)
+
+You can set per-repository defaults:
+
+```json
+{
+  "baseline": "moderate",
+  "systemName": "Payment API",
+  "defaultOutput": "ssp-draft.json",
+  "scanOutput": "scan-results.json",
+  "quiet": false,
+  "suppressTips": true,
+  "pager": false,
+  "enabledDetectors": ["containers", "cicd", "dependencies"],
+  "disabledDetectors": ["sbom"]
+}
+```
+
+Available detector names:
+- `containers`, `cicd`, `dependencies`, `iac`, `secrets`, `security-tools`, `git-security`, `api`, `database`, `sbom`, `cloud`
 
 ## 🎯 Example Workflow
 

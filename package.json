@@ -1,6 +1,6 @@
 {
   "name": "oscalflow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OSCALFLOW - Automated OSCAL compliance documentation for GitHub repositories",
   "type": "module",
   "repository": {
@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc && cp -r src/templates dist/",
     "dev": "tsx watch src/index.ts",
+    "test": "npm run build && node --test test/*.test.mjs",
     "prepare": "npm run build"
   },
   "keywords": [

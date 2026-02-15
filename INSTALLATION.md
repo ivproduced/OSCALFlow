@@ -81,6 +81,27 @@ gh oscal scan . --update test.json
 gh oscal explain SC-8
 ```
 
+## 🧪 Testing
+
+Run the automated test suite before submission:
+
+```bash
+npm test
+```
+
+This command will:
+- Build the project (`npm run build`)
+- Run unit tests for configuration parsing and detector filtering
+
+Optional command smoke checks:
+
+```bash
+node dist/index.js doctor .
+node dist/index.js scan --help
+node dist/index.js generate --help
+node dist/index.js explain --help
+```
+
 ## 📦 Project Structure After Build
 
 ```
