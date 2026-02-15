@@ -26,6 +26,7 @@ coverage/
 
 # Internal documentation and planning
 .internal/
+SUBMISSION_SUMMARY.md
 
 # Generated OSCAL files and test outputs
 *.json
