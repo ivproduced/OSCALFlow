@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OSCAL](https://img.shields.io/badge/OSCAL-1.2.0-purple)](https://pages.nist.gov/OSCAL/)
-[![GitHub](https://img.shields.io/badge/GitHub-eucann%2Foscalflow-black)](https://github.com/eucann/oscalflow)
+[![GitHub](https://img.shields.io/badge/GitHub-ivproduced%2FOSCALFlow-black)](https://github.com/ivproduced/OSCALFlow)
 
 Transform your repository into a compliance-ready system with automated OSCAL System Security Plan (SSP) generation. Detect 50+ NIST 800-53 control implementations from your codebase automatically across 8 programming languages.
 

@@ -5,11 +5,11 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/eucann/oscalflow.git"
+    "url": "https://github.com/ivproduced/OSCALFlow.git"
   },
-  "homepage": "https://github.com/eucann/oscalflow",
+  "homepage": "https://github.com/ivproduced/OSCALFlow",
   "bugs": {
-    "url": "https://github.com/eucann/oscalflow/issues"
+    "url": "https://github.com/ivproduced/OSCALFlow/issues"
   },
   "bin": {
     "gh-oscal": "./bin/gh-oscal"
