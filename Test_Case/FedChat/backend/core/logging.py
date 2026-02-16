@@ -57,8 +57,12 @@ def setup_logging():
 
 
 def get_audit_logger():
-    """Get audit logger for FISMA compliance"""
+    """Get audit logger for FISMA compliance - NIST 800-53 AU-2"""
     audit_logger = logging.getLogger("fedchat.audit")
+    
+    # Prevent duplicate handlers
+    if audit_logger.handlers:
+        return audit_logger
     
     # Audit log file handler
     audit_handler = logging.FileHandler(settings.AUDIT_LOG_PATH)
@@ -69,5 +73,30 @@ def get_audit_logger():
     audit_handler.setFormatter(audit_formatter)
     audit_logger.addHandler(audit_handler)
     audit_logger.setLevel(logging.INFO)
+    audit_logger.propagate = False  # Prevent duplicate logs
     
     return audit_logger
+
+
+def get_security_logger():
+    """Get dedicated security events logger for NIST 800-53 AU-2"""
+    security_logger = logging.getLogger("fedchat.security")
+    
+    # Prevent duplicate handlers
+    if security_logger.handlers:
+        return security_logger
+    
+    # Security log file handler
+    security_handler = logging.FileHandler(
+        settings.AUDIT_LOG_PATH.replace("audit.log", "security.log")
+    )
+    security_formatter = jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+    security_handler.setFormatter(security_formatter)
+    security_logger.addHandler(security_handler)
+    security_logger.setLevel(logging.INFO)
+    security_logger.propagate = False  # Prevent duplicate logs
+    
+    return security_logger

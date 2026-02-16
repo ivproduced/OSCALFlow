@@ -37,7 +37,16 @@ async def get_current_active_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Dependency to get current active user"""
+    from services.security_events import log_access_denied
+    
     if not current_user.is_active:
+        # AU-2: Log access denied for inactive user
+        log_access_denied(
+            user_id=str(current_user.id),
+            resource="api",
+            action="access",
+            reason="Inactive user account"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user"
@@ -49,7 +58,16 @@ async def get_current_admin_user(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Dependency to require admin role"""
+    from services.security_events import log_access_denied
+    
     if current_user.role != "admin":
+        # AU-2: Log authorization failure
+        log_access_denied(
+            user_id=str(current_user.id),
+            resource="admin_api",
+            action="access",
+            reason="Insufficient permissions - admin role required"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

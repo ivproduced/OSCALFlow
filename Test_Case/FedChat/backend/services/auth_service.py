@@ -12,6 +12,10 @@ import structlog
 
 from models import User, APIKey
 from core.config import settings
+from services.security_events import (
+    SecurityEventLogger, EventType, EventOutcome,
+    log_login_success, log_login_failure
+)
 
 logger = structlog.get_logger()
 
@@ -91,25 +95,44 @@ class AuthService:
         
         if not user:
             logger.info("auth_failed_user_not_found", username=username)
+            # AU-2: Log authentication failure
+            log_login_failure(username, ip_address, "User not found")
             return None
         
         # Check if account is locked
         if user.account_status == "locked":
             if user.account_locked_until and user.account_locked_until > datetime.utcnow():
                 logger.info("auth_failed_account_locked", user_id=str(user.id))
+                # AU-2: Log authentication failure - account locked
+                log_login_failure(username, ip_address, "Account locked")
                 return None
             else:
                 # Unlock account if lock period expired
                 user.account_status = "active"
                 user.account_locked_until = None
                 user.failed_login_attempts = 0
+                # AU-2: Log account unlock
+                SecurityEventLogger.log_account_management(
+                    event_type=EventType.ACCOUNT_UNLOCKED,
+                    target_user_id=str(user.id),
+                    target_username=user.username,
+                    admin_user_id="system",
+                    outcome=EventOutcome.SUCCESS,
+                    source_ip=ip_address,
+                    changes={"reason": "Lock period expired"}
+                )
         
         if not user.is_active or user.account_status == "disabled":
             logger.info("auth_failed_user_inactive", user_id=str(user.id))
+            # AU-2: Log authentication failure - inactive account
+            log_login_failure(username, ip_address, "Account inactive or disabled")
             return None
         
         if not AuthService.verify_password(password, user.password_hash):
             logger.info("auth_failed_invalid_password", user_id=str(user.id))
+            
+            # AU-2: Log authentication failure - invalid password
+            log_login_failure(username, ip_address, "Invalid password")
             
             # Record failed login attempt (AC-7)
             await AccountService.record_failed_login(db, str(user.id), ip_address)
@@ -124,6 +147,10 @@ class AuthService:
         await AccountService.update_last_activity(db, str(user.id))
         
         logger.info("auth_success", user_id=str(user.id), username=user.username)
+        
+        # AU-2: Log successful authentication
+        log_login_success(username, str(user.id), ip_address)
+        
         return user
     
     @staticmethod
@@ -173,6 +200,17 @@ class AuthService:
         await db.refresh(user)
         
         logger.info("user_created", user_id=str(user.id), username=username)
+        
+        # AU-2: Log account creation
+        SecurityEventLogger.log_account_management(
+            event_type=EventType.ACCOUNT_CREATED,
+            target_user_id=str(user.id),
+            target_username=username,
+            admin_user_id="system",
+            outcome=EventOutcome.SUCCESS,
+            changes={"email": email, "role": role}
+        )
+        
         return user
     
     @staticmethod
@@ -190,11 +228,26 @@ class AuthService:
         api_key_obj = result.scalar_one_or_none()
         
         if not api_key_obj:
+            # AU-2: Log API key validation failure
+            SecurityEventLogger.log_event(
+                event_type=EventType.API_KEY_USED,
+                outcome=EventOutcome.FAILURE,
+                action="validate_api_key",
+                reason="Invalid API key"
+            )
             return None
         
         # Check expiration
         if api_key_obj.expires_at and api_key_obj.expires_at < datetime.utcnow():
             logger.info("api_key_expired", api_key_id=str(api_key_obj.id))
+            # AU-2: Log expired API key usage attempt
+            SecurityEventLogger.log_event(
+                event_type=EventType.API_KEY_USED,
+                outcome=EventOutcome.FAILURE,
+                user_id=str(api_key_obj.user_id),
+                action="validate_api_key",
+                reason="API key expired"
+            )
             return None
         
         # Update last used
@@ -208,6 +261,14 @@ class AuthService:
         user = result.scalar_one_or_none()
         
         if user and user.is_active:
+            # AU-2: Log successful API key usage
+            SecurityEventLogger.log_event(
+                event_type=EventType.API_KEY_USED,
+                outcome=EventOutcome.SUCCESS,
+                user_id=str(user.id),
+                action="validate_api_key",
+                details={"api_key_id": str(api_key_obj.id)}
+            )
             return user
         
         return None

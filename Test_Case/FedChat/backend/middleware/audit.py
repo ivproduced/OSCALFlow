@@ -1,5 +1,6 @@
 """
 Audit Logging Middleware - FISMA Compliance
+Enhanced for NIST 800-53 AU-2 compliance
 """
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -12,6 +13,7 @@ import json
 
 from core.config import settings
 from core.logging import get_audit_logger
+from services.security_events import SecurityEventLogger, EventType, EventOutcome
 
 logger = structlog.get_logger()
 audit_logger = get_audit_logger()
@@ -99,19 +101,23 @@ class AuditMiddleware(BaseHTTPMiddleware):
     
     def _get_user_id(self, request: Request) -> Optional[str]:
         """Extract user ID from request"""
+        # Try to get from request state (set by auth dependencies)
+        if hasattr(request.state, "user"):
+            user = getattr(request.state, "user", None)
+            if user:
+                return str(getattr(user, "id", None))
+        
         # Try to get from JWT token in Authorization header
         auth_header = request.headers.get("authorization", "")
         if auth_header.startswith("Bearer "):
             try:
-                # Decode JWT to get user_id
-                # This would use your JWT decoding logic
-                return "user_id_from_jwt"
+                from services.auth_service import AuthService
+                token = auth_header.replace("Bearer ", "")
+                payload = AuthService.decode_token(token)
+                if payload:
+                    return payload.get("sub")
             except Exception:
                 pass
-        
-        # Try to get from session
-        if hasattr(request.state, "user"):
-            return getattr(request.state.user, "id", None)
         
         return None
     
