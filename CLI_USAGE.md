@@ -43,6 +43,9 @@ Auto-detect compliance implementations:
 
 ```bash
 gh oscal scan . --update ssp-draft.json
+
+# With AI validation
+gh oscal scan . --ai-validate --ai-limit 10
 ```
 
 **Arguments:**
@@ -56,6 +59,10 @@ gh oscal scan . --update ssp-draft.json
 - `-q, --quiet`: Reduce console output (CI-friendly)
 - `--no-tips`: Suppress tips/guidance text
 - `--pager`: Show findings in pager (`less`)
+- `--ai-validate`: 🤖 Use AI (Copilot CLI) to validate implementations
+- `--ai-limit <number>`: Limit controls to validate (for testing)
+
+> **Note**: AI validation uses `gpt-5-mini` by default to avoid consuming premium requests. Always test with `--ai-limit 5` before running full validation on large projects (50+ controls = 50+ AI calls).
 
 ### Explain Controls
 

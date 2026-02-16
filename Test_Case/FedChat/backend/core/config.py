@@ -101,6 +101,14 @@ class Settings(BaseSettings):
     SAML_IDP_SSO_URL: Optional[str] = None
     SAML_IDP_CERT_PATH: Optional[str] = None
     
+    # Account Management - NIST 800-53 AC-2
+    ACCOUNT_INACTIVITY_DAYS: int = 90  # Auto-disable after 90 days
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 5  # Lock account after 5 failed attempts
+    ACCOUNT_LOCKOUT_MINUTES: int = 30  # Lock duration
+    PASSWORD_MAX_AGE_DAYS: int = 90  # Force password change
+    ACCOUNT_REVIEW_DAYS: int = 365  # Annual account review
+    ENABLE_AUTO_DISABLE_INACTIVE: bool = True  # Automatically disable inactive accounts
+    
     # Audit & Logging
     AUDIT_LOG_LEVEL: str = "comprehensive"
     AUDIT_LOG_PATH: str = "/var/log/fedchat/audit.log"

@@ -9,6 +9,59 @@ export interface ComplianceSignal {
   evidence: string;
 }
 
+/**
+ * Validates that a file exists and has meaningful content
+ * @param filePath - Absolute path to the file
+ * @param minLines - Minimum number of non-empty lines (default: 1)
+ * @returns true if file exists with valid content
+ */
+function hasValidContent(filePath: string, minLines: number = 1): boolean {
+  if (!fs.existsSync(filePath)) {
+    return false;
+  }
+  
+  try {
+    const stats = fs.statSync(filePath);
+    
+    // Empty files don't count
+    if (stats.size === 0) {
+      return false;
+    }
+    
+    // Read and validate content
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const nonEmptyLines = content.split('\n').filter(line => line.trim().length > 0);
+    
+    return nonEmptyLines.length >= minLines;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Validates that a directory exists and contains files
+ * @param dirPath - Absolute path to the directory
+ * @returns true if directory exists and has files
+ */
+function hasValidDirectory(dirPath: string): boolean {
+  if (!fs.existsSync(dirPath)) {
+    return false;
+  }
+  
+  try {
+    const stats = fs.statSync(dirPath);
+    if (!stats.isDirectory()) {
+      return false;
+    }
+    
+    // Check if directory has any files
+    const entries = fs.readdirSync(dirPath);
+    return entries.length > 0;
+  } catch (err) {
+    return false;
+  }
+}
+
 export const DETECTOR_NAMES = [
   'containers',
   'cicd',
@@ -186,11 +239,18 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   return arrayOfFiles;
 }
 
+// Helper function to find files by name pattern
+function findFilesByName(dirPath: string, fileName: string): string[] {
+  const allFiles = getAllFiles(dirPath);
+  return allFiles.filter(file => path.basename(file) === fileName);
+}
+
 export async function scanRepository(repoPath: string): Promise<ComplianceSignal[]> {
   const signals: ComplianceSignal[] = [];
   
   // Signal 1: Containerization
-  if (fs.existsSync(path.join(repoPath, 'Dockerfile'))) {
+  const dockerfilePath = path.join(repoPath, 'Dockerfile');
+  if (hasValidContent(dockerfilePath, 3)) { // Minimum 3 lines for valid Dockerfile
     signals.push({
       file: 'Dockerfile',
       control: 'SC-39',
@@ -206,7 +266,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   ];
   
   for (const hardened of hardenedDockerfiles) {
-    if (fs.existsSync(path.join(repoPath, hardened.file))) {
+    const hardenedPath = path.join(repoPath, hardened.file);
+    if (hasValidContent(hardenedPath, 3)) { // Minimum 3 lines
       signals.push({
         file: hardened.file,
         control: hardened.control,
@@ -223,8 +284,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
   
   // Check for multi-stage distroless pattern in regular Dockerfile
-  const dockerfilePath = path.join(repoPath, 'Dockerfile');
-  if (fs.existsSync(dockerfilePath)) {
+  if (hasValidContent(dockerfilePath, 3)) {
     try {
       const dockerContent = fs.readFileSync(dockerfilePath, 'utf-8');
       
@@ -248,7 +308,9 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
     }
   }
   
-  if (fs.existsSync(path.join(repoPath, 'docker-compose.yml')) || fs.existsSync(path.join(repoPath, 'docker-compose.yaml'))) {
+  const dockerComposeYml = path.join(repoPath, 'docker-compose.yml');
+  const dockerComposeYaml = path.join(repoPath, 'docker-compose.yaml');
+  if (hasValidContent(dockerComposeYml, 5) || hasValidContent(dockerComposeYaml, 5)) { // Minimum 5 lines for valid compose file
     signals.push({
       file: 'docker-compose.yml',
       control: 'SC-2',
@@ -257,7 +319,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
   
   // Signal 2: CI/CD - ENHANCED
-  if (fs.existsSync(path.join(repoPath, '.github/workflows'))) {
+  if (hasValidDirectory(path.join(repoPath, '.github/workflows'))) {
     signals.push({
       file: '.github/workflows/',
       control: 'CM-3',
@@ -272,7 +334,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
   
   // GitLab CI
-  if (fs.existsSync(path.join(repoPath, '.gitlab-ci.yml'))) {
+  const gitlabCiPath = path.join(repoPath, '.gitlab-ci.yml');
+  if (hasValidContent(gitlabCiPath, 3)) {
     signals.push({
       file: '.gitlab-ci.yml',
       control: 'CM-3',
@@ -286,7 +349,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
 
   // CircleCI
-  if (fs.existsSync(path.join(repoPath, '.circleci/config.yml'))) {
+  const circleCiPath = path.join(repoPath, '.circleci/config.yml');
+  if (hasValidContent(circleCiPath, 3)) {
     signals.push({
       file: '.circleci/config.yml',
       control: 'CM-3',
@@ -300,7 +364,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
 
   // Jenkins
-  if (fs.existsSync(path.join(repoPath, 'Jenkinsfile'))) {
+  const jenkinsfilePath = path.join(repoPath, 'Jenkinsfile');
+  if (hasValidContent(jenkinsfilePath, 3)) {
     signals.push({
       file: 'Jenkinsfile',
       control: 'CM-3',
@@ -314,7 +379,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
 
   // Azure Pipelines
-  if (fs.existsSync(path.join(repoPath, 'azure-pipelines.yml'))) {
+  const azurePipelinesPath = path.join(repoPath, 'azure-pipelines.yml');
+  if (hasValidContent(azurePipelinesPath, 3)) {
     signals.push({
       file: 'azure-pipelines.yml',
       control: 'CM-3',
@@ -328,7 +394,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
 
   // Travis CI
-  if (fs.existsSync(path.join(repoPath, '.travis.yml'))) {
+  const travisPath = path.join(repoPath, '.travis.yml');
+  if (hasValidContent(travisPath, 3)) {
     signals.push({
       file: '.travis.yml',
       control: 'CM-3',
@@ -342,7 +409,8 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   }
 
   // Bitbucket Pipelines
-  if (fs.existsSync(path.join(repoPath, 'bitbucket-pipelines.yml'))) {
+  const bitbucketPipelinesPath = path.join(repoPath, 'bitbucket-pipelines.yml');
+  if (hasValidContent(bitbucketPipelinesPath, 3)) {
     signals.push({
       file: 'bitbucket-pipelines.yml',
       control: 'CM-3',
@@ -1093,16 +1161,17 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
     }
   }
   
-  // Authentication Service Detection - NEW
-  const authServicePath = path.join(repoPath, 'backend/services/auth_service.py');
-  if (fs.existsSync(authServicePath)) {
+  // Authentication Service Detection - Search recursively for auth_service.py
+  const authServiceFiles = findFilesByName(repoPath, 'auth_service.py');
+  for (const authServicePath of authServiceFiles) {
     try {
       const authContent = fs.readFileSync(authServicePath, 'utf-8');
+      const relPath = path.relative(repoPath, authServicePath);
       
       // IA-2: Identification and Authentication
       if (authContent.includes('jwt') || authContent.includes('JWT') || authContent.includes('token')) {
         signals.push({
-          file: 'backend/services/auth_service.py',
+          file: relPath,
           control: 'IA-2',
           evidence: 'User identification and authentication via JWT token-based system'
         });
@@ -1111,7 +1180,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       // IA-5: Authenticator Management
       if (authContent.includes('hash_password') || authContent.includes('bcrypt') || authContent.includes('CryptContext')) {
         signals.push({
-          file: 'backend/services/auth_service.py',
+          file: relPath,
           control: 'IA-5',
           evidence: 'Authenticator management via password hashing (bcrypt)'
         });
@@ -1120,7 +1189,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       // AC-2: Account Management
       if (authContent.includes('create_user') || authContent.includes('User') || authContent.includes('register')) {
         signals.push({
-          file: 'backend/services/auth_service.py',
+          file: relPath,
           control: 'AC-2',
           evidence: 'Account management implementation for user creation and administration'
         });
@@ -1129,13 +1198,13 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       // AC-11: Session Lock / AC-12: Session Termination
       if (authContent.includes('expires_delta') || authContent.includes('JWT_EXPIRATION') || authContent.includes('expire')) {
         signals.push({
-          file: 'backend/services/auth_service.py',
+          file: relPath,
           control: 'AC-11',
           evidence: 'Device lock via session timeout configured through JWT expiration'
         });
         
         signals.push({
-          file: 'backend/services/auth_service.py',
+          file: relPath,
           control: 'AC-12',
           evidence: 'Session termination via JWT token expiration mechanism'
         });
@@ -1846,6 +1915,52 @@ export function formatSignalsSummary(signals: ComplianceSignal[]): string {
   const lines: string[] = [];
   for (const [control, items] of Object.entries(grouped)) {
     lines.push(`✓ ${control}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Format signals with AI validation results
+ */
+export function formatSignalsSummaryWithValidation(
+  signals: ComplianceSignal[],
+  validationResults: Map<string, any>
+): string {
+  if (signals.length === 0) {
+    return 'No compliance signals detected';
+  }
+  
+  const grouped = signals.reduce((acc, signal) => {
+    if (!acc[signal.control]) {
+      acc[signal.control] = [];
+    }
+    acc[signal.control].push(signal);
+    return acc;
+  }, {} as Record<string, ComplianceSignal[]>);
+  
+  const lines: string[] = [];
+  for (const [control, items] of Object.entries(grouped)) {
+    const key = `${control}:${items[0].file}`;
+    const validation = validationResults.get(key);
+    
+    let statusIcon = '✓';
+    let statusText = '';
+    
+    if (validation) {
+      if (validation.validated && validation.confidence === 'high') {
+        statusIcon = '✅';
+        statusText = ' [AI: VERIFIED ✓]';
+      } else if (validation.validated && validation.confidence === 'medium') {
+        statusIcon = '⚠️ ';
+        statusText = ' [AI: LIKELY ≈]';
+      } else if (!validation.validated) {
+        statusIcon = '❌';
+        statusText = ' [AI: NOT VERIFIED ✗]';
+      }
+    }
+    
+    lines.push(`${statusIcon} ${control}${statusText}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
   }
   
   return lines.join('\n');

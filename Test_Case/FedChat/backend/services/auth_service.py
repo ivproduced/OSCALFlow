@@ -70,9 +70,12 @@ class AuthService:
     async def authenticate_user(
         db: AsyncSession,
         username: str,
-        password: str
+        password: str,
+        ip_address: str = "unknown"
     ) -> Optional[User]:
         """Authenticate user by username/email and password"""
+        from services.account_service import AccountService
+        
         # Try username first
         result = await db.execute(
             select(User).where(User.username == username)
@@ -90,17 +93,35 @@ class AuthService:
             logger.info("auth_failed_user_not_found", username=username)
             return None
         
-        if not user.is_active:
+        # Check if account is locked
+        if user.account_status == "locked":
+            if user.account_locked_until and user.account_locked_until > datetime.utcnow():
+                logger.info("auth_failed_account_locked", user_id=str(user.id))
+                return None
+            else:
+                # Unlock account if lock period expired
+                user.account_status = "active"
+                user.account_locked_until = None
+                user.failed_login_attempts = 0
+        
+        if not user.is_active or user.account_status == "disabled":
             logger.info("auth_failed_user_inactive", user_id=str(user.id))
             return None
         
         if not AuthService.verify_password(password, user.password_hash):
             logger.info("auth_failed_invalid_password", user_id=str(user.id))
+            
+            # Record failed login attempt (AC-7)
+            await AccountService.record_failed_login(db, str(user.id), ip_address)
             return None
         
-        # Update last login
+        # Successful authentication
+        # Reset failed login attempts
+        await AccountService.reset_failed_login_attempts(db, str(user.id))
+        
+        # Update last login and last activity
         user.last_login = datetime.utcnow()
-        await db.commit()
+        await AccountService.update_last_activity(db, str(user.id))
         
         logger.info("auth_success", user_id=str(user.id), username=user.username)
         return user

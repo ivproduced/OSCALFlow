@@ -14,7 +14,7 @@ from prometheus_client import make_asgi_app
 from core.config import settings
 from core.logging import setup_logging
 from core.database import init_db, close_db
-from api.v1 import chat, agents, rag, admin, health, nist, policy, system_use
+from api.v1 import chat, agents, rag, admin, health, nist, policy, system_use, accounts
 from middleware.audit import AuditMiddleware
 from middleware.rate_limit import RateLimitMiddleware
 from middleware.security import SecurityHeadersMiddleware
@@ -118,6 +118,7 @@ app.include_router(rag.router, prefix="/api/v1", tags=["RAG"])
 app.include_router(nist.router, prefix="/api/v1", tags=["NIST RAG"])
 app.include_router(policy.router, prefix="/api/v1", tags=["Policy RAG"])
 app.include_router(admin.router, prefix="/api/v1", tags=["Admin"])
+app.include_router(accounts.router, prefix="/api/v1", tags=["Account Management"])
 
 # Prometheus metrics endpoint
 metrics_app = make_asgi_app()

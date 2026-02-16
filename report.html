@@ -1,0 +1,4366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Security Plan Template - OSCAL SSP Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: width 0.3s ease;
+        }
+        
+        .family-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .family-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .family-title {
+            font-size: 1.3rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .family-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .control {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid #e0e0e0;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .control.implemented {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
+        }
+        
+        .control-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .control-id {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .control-title {
+            color: #555;
+            flex: 1;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-implemented {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status-pending {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .control-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            padding-left: 0.5rem;
+        }
+        
+        .statements {
+            margin-top: 0.75rem;
+            padding-left: 1rem;
+        }
+        
+        .statement {
+            background: white;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid #4caf50;
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        @media print {
+            .header {
+                background: #667eea;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .progress-fill {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>System Security Plan Template</h1>
+        <p>OSCAL System Security Plan - Generated 2/15/2026</p>
+    </div>
+    
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">246</div>
+                <div class="stat-label">Total Controls</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">48</div>
+                <div class="stat-label">Implemented</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">19.5%</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">~24.0h</div>
+                <div class="stat-label">Time Saved</div>
+            </div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 19.5%">
+                48/246 Controls
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4caf50;"></div>
+                <span>Implemented (48)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff9800;"></div>
+                <span>Pending (198)</span>
+            </div>
+        </div>
+        
+        
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">AC - Access Control</h2>
+                <span class="family-badge">8/19 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Account management implementation for user creation and administration. Evidence found in: backend/services/auth_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Access enforcement via authentication and authorization dependencies. Evidence found in: backend/api/dependencies.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Unsuccessful logon attempts enforcement via account lockout policy. Evidence found in: docs/FISMA_COMPLIANCE.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System use notification displayed via middleware banner. Evidence found in: backend/middleware/system_use_banner.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-14</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-14 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-17</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-17 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-18</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-18 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-19</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-19 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-20</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-20 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-22</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-22 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Information flow enforcement documented via data flow diagrams. Evidence found in: docs/ato/DATA_FLOW_DIAGRAM.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Least privilege enforcement via security middleware. Evidence found in: backend/middleware/security.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Device lock via session timeout configured through JWT expiration. Evidence found in: backend/services/auth_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AC-12</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Session termination via JWT token expiration mechanism. Evidence found in: backend/services/auth_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-17(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-17(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-20(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-20(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AC-20(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AC-20(2) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">AP - Authority and Purpose</h2>
+                <span class="family-badge">1/1 Implemented</span>
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AP-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Privacy impact assessment documented for PII handling. Evidence found in: docs/ato/PRIVACY_IMPACT_ASSESSMENT.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">AT - Awareness and Training</h2>
+                <span class="family-badge">0/7 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-2(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-2(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-3(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-3(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AT-3(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AT-3(5) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">AU - Audit and Accountability</h2>
+                <span class="family-badge">5/20 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AU-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Audit event determination via centralized audit middleware. Evidence found in: backend/middleware/audit.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AU-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Audit record content generation with timestamp, user, and event details. Evidence found in: backend/middleware/audit.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AU-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Audit record review and analysis via SIEM integration (ServiceNow/Splunk). Evidence found in: docs/SERVICENOW_SPLUNK_INTEGRATION.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AU-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Protection of audit information via append-only logs and access controls. Evidence found in: docs/FISMA_COMPLIANCE.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-11 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">AU-12</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Audit record generation via application-level logging middleware. Evidence found in: backend/middleware/audit.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-3(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-3(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-4(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-4(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-6(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-6(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-6(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-6(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-7(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-9(4)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-9(4) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-11(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-11(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-12(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-12(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">AU-12(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of AU-12(3) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">CA - Assessment, Authorization, and Monitoring</h2>
+                <span class="family-badge">2/13 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CA-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Security assessment documentation per FISMA requirements. Evidence found in: docs/FISMA_COMPLIANCE.md
+                    </div>
+                    
+                    <div class="statement">
+                        Security control assessment via controls traceability matrix. Evidence found in: docs/ato/CONTROLS_TRACEABILITY_MATRIX.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CA-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Plan of Action and Milestones template for tracking security deficiencies. Evidence found in: docs/ato/POAM_TEMPLATE.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-9 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-2(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-2(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-2(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-2(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-3(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-3(5) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-7(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CA-8(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CA-8(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">CM - Configuration Management</h2>
+                <span class="family-badge">3/22 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CM-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Baseline configuration documented via environment variable template. Evidence found in: .env.example
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CM-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Configuration settings management via centralized configuration module. Evidence found in: backend/core/config.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CM-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Least functionality principle via exclusion of unnecessary files from version control. Evidence found in: .gitignore
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-10 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-11 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-2(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-2(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-2(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-2(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-2(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-2(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-3(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-3(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-6(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-6(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-7(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-7(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-7(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-7(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-7(5) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-8(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-8(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-8(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-8(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-9 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CM-11(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CM-11(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">CP - Contingency Planning</h2>
+                <span class="family-badge">3/17 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CP-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Contingency plan implementation via system health monitoring. Evidence found in: scripts/health_check.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CP-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System backup configuration for data protection. Evidence found in: backend/core/config.py
+                    </div>
+                    
+                    <div class="statement">
+                        System backup capability via administrative API endpoints. Evidence found in: backend/api/v1/admin.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">CP-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System recovery via backup and restore API functionality. Evidence found in: backend/api/v1/admin.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-2(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-2(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-2(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-2(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-2(8)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-2(8) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-7(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-7(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-7(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-7(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-7(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-8(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-8(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">CP-9(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of CP-9(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">IA - Identification and Authentication</h2>
+                <span class="family-badge">4/16 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">IA-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        User identification and authentication via JWT token-based system. Evidence found in: backend/services/auth_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">IA-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Identifier management via user and API key authentication. Evidence found in: backend/api/dependencies.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">IA-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Authenticator management via password hashing (bcrypt). Evidence found in: backend/services/auth_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">IA-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Identification and authentication for non-organizational users via SAML/SSO. Evidence found in: backend/core/config.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-2(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-2(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-2(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-2(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-2(8)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-2(8) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-2(12)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-2(12) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-5(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-5(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-8(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-8(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-8(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-8(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IA-8(4)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IA-8(4) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">IR - Incident Response</h2>
+                <span class="family-badge">1/11 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">IR-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Incident handling procedures documented for security event response. Evidence found in: docs/FISMA_COMPLIANCE.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-4(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-4(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-5(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-5(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-6(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-6(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">IR-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of IR-7(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">MA - Maintenance</h2>
+                <span class="family-badge">0/6 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MA-5(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MA-5(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">MP - Media Protection</h2>
+                <span class="family-badge">0/8 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">MP-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of MP-7(1) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">PE - Physical and Environmental Protection</h2>
+                <span class="family-badge">0/17 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-12</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-12 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-13</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-13 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-14</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-14 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-15</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-15 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-16</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-16 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-9 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-10 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-11 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-17</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-17 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PE-18</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PE-18 control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">PL - Planning</h2>
+                <span class="family-badge">1/6 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PL-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PL-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">PL-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System security plan documentation maintained. Evidence found in: docs/ato/SYSTEM_SECURITY_PLAN_TEMPLATE.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PL-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PL-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PL-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PL-10 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PL-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PL-11 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PL-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PL-8 control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">PM - Program Management</h2>
+                <span class="family-badge">0/3 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PM-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PM-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PM-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PM-9 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PM-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PM-11 control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">PS - Personnel Security</h2>
+                <span class="family-badge">0/9 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-6 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">PS-3(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of PS-3(3) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">RA - Risk Assessment</h2>
+                <span class="family-badge">2/9 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">RA-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Risk assessment documentation maintained for security authorization. Evidence found in: docs/ato/RISK_ASSESSMENT.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">RA-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Vulnerability monitoring and scanning via automated security tooling. Evidence found in: scripts/security/scan_vulnerabilities.sh
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-3(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-3(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-5(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-5(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-5(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-5(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">RA-5(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of RA-5(5) control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">SA - System and Services Acquisition</h2>
+                <span class="family-badge">5/16 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-2 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SA-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Acquisition process controls via software bill of materials. Evidence found in: scripts/security/generate_sbom.sh
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SA-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System documentation maintained in repository. Evidence found in: README.md
+                    </div>
+                    
+                    <div class="statement">
+                        System deployment and operational documentation. Evidence found in: docs/DEPLOYMENT.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-9</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-9 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SA-22</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Unsupported system functions documented via hardened container images. Evidence found in: docs/HARDENED_IMAGES.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-4(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-4(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-4(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-4(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-4(8)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-4(8) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-4(10)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-4(10) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-10 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SA-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Developer security testing via production readiness checklist. Evidence found in: docs/PRODUCTION_READINESS_CHECKLIST.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SA-15</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Development process and standards via documented dependencies and version management. Evidence found in: backend/requirements.txt, librechat/package.json
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SA-16</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SA-16 control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">SC - System and Communications Protection</h2>
+                <span class="family-badge">7/26 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Denial-of-service protection via rate limiting middleware. Evidence found in: backend/middleware/rate_limit.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Boundary protection via Kubernetes NetworkPolicy configuration. Evidence found in: kubernetes/07-security-policies.yaml
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-12</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Cryptographic key management via environment variable configuration. Evidence found in: .env.example
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-13</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-13 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-15</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-15 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-20</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-20 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-21</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-21 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-22</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-22 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-39</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-39 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Application partitions system components via Docker Compose orchestration. Evidence found in: docker-compose.yml
+                    </div>
+                    
+                    <div class="statement">
+                        Application partitioning via Kubernetes namespace isolation. Evidence found in: kubernetes/
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-4 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(3)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(3) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(4)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(4) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(5) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(7)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(7) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(8)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(8) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-7(18)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-7(18) control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Transmission confidentiality via HTTPS/TLS configuration. Evidence found in: .env.example
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-8(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-8(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-10 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-13(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-13(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-18</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-18 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-28</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Protection of information at rest via database encryption and secure connections. Evidence found in: backend/core/database.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SC-28(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SC-28(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SC-6</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Resource availability via Kubernetes resource quotas and limits. Evidence found in: kubernetes/01-postgres.yaml
+                    </div>
+                    
+                    <div class="statement">
+                        Resource availability via Kubernetes resource quotas and limits. Evidence found in: kubernetes/02-redis.yaml
+                    </div>
+                    
+                    <div class="statement">
+                        Resource availability via Kubernetes resource quotas and limits. Evidence found in: kubernetes/03-ollama.yaml
+                    </div>
+                    
+                    <div class="statement">
+                        Resource availability via Kubernetes resource quotas and limits. Evidence found in: kubernetes/04-backend.yaml
+                    </div>
+                    
+                    <div class="statement">
+                        Resource availability via Kubernetes resource quotas and limits. Evidence found in: kubernetes/05-frontend.yaml
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">SI - System and Information Integrity</h2>
+                <span class="family-badge">5/19 Implemented</span>
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-1</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-1 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SI-2</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Flaw remediation via automated vulnerability scanning and patching workflow. Evidence found in: scripts/security/scan_vulnerabilities.sh
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-3</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-3 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SI-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        System monitoring via structured logging implementation. Evidence found in: backend/services/agent_service.py
+                    </div>
+                    
+                    <div class="statement">
+                        System monitoring via automated health check endpoints. Evidence found in: scripts/health_check.py
+                    </div>
+                    
+                    <div class="statement">
+                        System monitoring via security information and event management integration. Evidence found in: docs/SERVICENOW_SPLUNK_INTEGRATION.md
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-5</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-5 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SI-12</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Information handling via PII detection and redaction mechanisms. Evidence found in: backend/services/guardrails_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-2(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-2(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-3(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-3(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-3(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-3(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-4(2)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-4(2) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-4(4)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-4(4) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-4(5)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-4(5) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-7</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-7 control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-7(1)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-7(1) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-7(7)</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-7(7) control
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-8</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-8 control
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SI-10</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Information input validation via guardrails service sanitization. Evidence found in: backend/services/guardrails_service.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SI-11</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Error handling and information disclosure prevention via exception handling. Evidence found in: backend/api/dependencies.py
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="control ">
+                <div class="control-header">
+                    <span class="control-id">SI-16</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-pending">
+                        ○ Pending
+                    </span>
+                </div>
+                
+                <div class="control-description">
+                    Implementation of SI-16 control
+                </div>
+                
+            </div>
+            
+        </div>
+          
+        <div class="family-section">
+            <div class="family-header">
+                <h2 class="family-title">SR - SR</h2>
+                <span class="family-badge">1/1 Implemented</span>
+            </div>
+            
+            <div class="control implemented">
+                <div class="control-header">
+                    <span class="control-id">SR-4</span>
+                    <span class="control-title">Untitled Control</span>
+                    <span class="status-badge status-implemented">
+                        ✓ Implemented
+                    </span>
+                </div>
+                
+                <div class="statements">
+                    
+                    <div class="statement">
+                        Software supply chain provenance via automated SBOM generation. Evidence found in: scripts/security/generate_sbom.sh
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+          
+    </div>
+    
+    <div class="footer">
+        <p>Generated by gh-oscal CLI | OSCAL 1.2.0 Compliant</p>
+    </div>
+</body>
+</html>

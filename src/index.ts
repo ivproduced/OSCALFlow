@@ -6,6 +6,7 @@ import { scanCommand } from './commands/scan.js';
 import { explainCommand } from './commands/explain.js';
 import { exportCommand } from './commands/export.js';
 import { doctorCommand } from './commands/doctor.js';
+import { suggestCommand } from './commands/suggest.js';
 
 program
   .name('gh-oscal')
@@ -17,5 +18,6 @@ program.addCommand(scanCommand);
 program.addCommand(explainCommand);
 program.addCommand(exportCommand);
 program.addCommand(doctorCommand);
+program.addCommand(suggestCommand);
 
 program.parse();

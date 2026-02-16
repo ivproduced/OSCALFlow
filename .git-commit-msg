@@ -1,0 +1,11 @@
+feat: AI-powered validation with Copilot CLI + OSCAL catalog
+
+- Add --ai-validate flag validates implementations against NIST 800-53
+- Uses OSCAL catalog parser for authoritative requirements  
+- Integrates GitHub Copilot CLI with gpt-5-mini model
+- Output shows ✅ VERIFIED / ❌ NOT VERIFIED with confidence
+- Add --ai-limit flag for testing subset of controls
+- Update scanner with dynamic file search (fixes hardcoded paths)
+- Content validation improvements (file size, line counts)
+- Documentation updates: README.md, CLI_USAGE.md
+- suggest command enhancements: --output flag, improved prompts

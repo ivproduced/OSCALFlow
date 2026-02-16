@@ -7,13 +7,16 @@ import type { Ora } from 'ora';
 import {
   scanRepository,
   formatSignalsSummary,
+  formatSignalsSummaryWithValidation,
   filterSignalsByDetectors,
   DETECTOR_NAMES,
-  type DetectorName
+  type DetectorName,
+  type ComplianceSignal
 } from '../lib/scanner.js';
 import { updateSSPWithSignals } from '../lib/mapper.js';
 import { loadOscalFlowConfig, parseDetectorList } from '../lib/config.js';
 import { printWithOptionalPager } from '../lib/output.js';
+import { validateControlImplementation, type ValidationResult } from '../lib/ai-validator.js';
 
 export const scanCommand = new Command('scan')
   .description('Scan repository for compliance signals and update SSP')
@@ -25,6 +28,8 @@ export const scanCommand = new Command('scan')
   .option('-q, --quiet', 'Reduce console output')
   .option('--no-tips', 'Suppress tips and guidance text')
   .option('--pager', 'Show summary using pager (less)')
+  .option('--ai-validate', 'Use AI (Copilot CLI) to validate control implementations against OSCAL requirements')
+  .option('--ai-limit <number>', 'Limit the number of controls to AI validate (useful for testing)', parseInt)
   .action(async (repoPath, options) => {
     const absolutePath = path.resolve(repoPath);
     const { config } = loadOscalFlowConfig(absolutePath);
@@ -75,6 +80,57 @@ export const scanCommand = new Command('scan')
         spinner.succeed(chalk.green(`Found ${signals.length} compliance signal${signals.length !== 1 ? 's' : ''}`));
       }
       
+      // AI Validation Phase (if enabled)
+      let validationResults: Map<string, ValidationResult> = new Map();
+      if (options.aiValidate) {
+        const validationSpinner = quiet ? null : ora('AI validating control implementations...').start();
+        
+        try {
+          // Get unique control-file pairs
+          const uniqueValidations = new Map<string, ComplianceSignal>();
+          for (const signal of signals) {
+            const key = `${signal.control}:${signal.file}`;
+            if (!uniqueValidations.has(key)) {
+              uniqueValidations.set(key, signal);
+            }
+          }
+          
+          // Apply limit if specified
+          const validationsToProcess = options.aiLimit 
+            ? Array.from(uniqueValidations.entries()).slice(0, options.aiLimit)
+            : Array.from(uniqueValidations.entries());
+          
+          if (validationSpinner) {
+            validationSpinner.text = `AI validating ${validationsToProcess.length} control implementations...`;
+          }
+          
+          // Validate each control (sequentially to avoid overwhelming Copilot CLI)
+          let validated = 0;
+          for (const [key, signal] of validationsToProcess) {
+            const result = await validateControlImplementation(signal.control, signal.file, absolutePath);
+            validationResults.set(key, result);
+            validated++;
+            
+            if (validationSpinner && !quiet) {
+              validationSpinner.text = `AI validated ${validated}/${validationsToProcess.length} controls...`;
+            }
+          }
+          
+          if (validationSpinner) {
+            const verifiedCount = Array.from(validationResults.values()).filter(r => r.validated).length;
+            const totalMsg = options.aiLimit ? `${verifiedCount}/${validationsToProcess.length} (limited from ${uniqueValidations.size})` : `${verifiedCount}/${validationsToProcess.length}`;
+            validationSpinner.succeed(chalk.green(`AI Validation: ${totalMsg} controls verified`));
+          }
+        } catch (error) {
+          if (validationSpinner) {
+            validationSpinner.fail(chalk.red(`AI validation error: ${error instanceof Error ? error.message : String(error)}`));
+          }
+          if (!quiet) {
+            console.log(chalk.yellow('⚠️  Continuing with pattern-based detection only'));
+          }
+        }
+      }
+      
       const uniqueControls = new Set(signals.map(s => s.control));
       const controlFamilies = Array.from(uniqueControls).reduce((acc, control) => {
         const family = control.split('-')[0];
@@ -123,7 +179,14 @@ export const scanCommand = new Command('scan')
       }
 
       if (!quiet) {
-        const summaryText = `${chalk.cyan('Compliance Signals Detected:\n')}\n${formatSignalsSummary(signals)}`;
+        let summaryText: string;
+        
+        if (options.aiValidate && validationResults.size > 0) {
+          summaryText = `${chalk.cyan('Compliance Signals Detected (with AI Validation):\n')}\n${formatSignalsSummaryWithValidation(signals, validationResults)}`;
+        } else {
+          summaryText = `${chalk.cyan('Compliance Signals Detected:\n')}\n${formatSignalsSummary(signals)}`;
+        }
+        
         printWithOptionalPager(summaryText, usePager);
       } else {
         console.log(`Detected ${detectedCount} controls (${coveragePercent}% of MODERATE baseline)`);

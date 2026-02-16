@@ -1,0 +1,23 @@
+# Crontab for FedChat Backend - NIST 800-53 AC-2 Compliance
+# 
+# Install with: crontab -e
+# Or deploy to /etc/cron.d/fedchat-backend
+#
+# IMPORTANT: Update paths to match your deployment
+
+# Environment variables
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+PYTHONPATH=/app
+
+# AC-2(3) - Check for inactive accounts and auto-disable (daily at 2 AM)
+0 2 * * * cd /app && python -m services.background_jobs inactivity_check >> /var/log/fedchat/cron.log 2>&1
+
+# AC-2 - Generate account review report (weekly on Mondays at 3 AM)
+0 3 * * 1 cd /app && python -m services.background_jobs account_review >> /var/log/fedchat/cron.log 2>&1
+
+# IA-5 - Check for password expiration (daily at 4 AM)
+0 4 * * * cd /app && python -m services.background_jobs password_expiry >> /var/log/fedchat/cron.log 2>&1
+
+# Rotate logs (daily at 1 AM)
+0 1 * * * /usr/sbin/logrotate /etc/logrotate.d/fedchat >> /var/log/fedchat/cron.log 2>&1
