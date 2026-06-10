@@ -20,6 +20,24 @@ import { loadOscalFlowConfig, parseDetectorList } from '../lib/config.js';
 import { printWithOptionalPager } from '../lib/output.js';
 import { validateControlImplementation, type ValidationResult } from '../lib/ai-validator.js';
 
+function extractImplementedControls(sspPath: string): Set<string> {
+  try {
+    const ssp = JSON.parse(fs.readFileSync(sspPath, 'utf-8'));
+    const requirements = ssp?.['system-security-plan']?.['control-implementation']?.['implemented-requirements'] ?? [];
+    const implemented = new Set<string>();
+    for (const requirement of requirements) {
+      const hasImplStatus = requirement.props?.some((prop: any) => prop.name === 'implementation-status' && prop.value === 'implemented');
+      const hasStatements = requirement.statements?.length > 0;
+      if (hasImplStatus || hasStatements) {
+        implemented.add(requirement['control-id']);
+      }
+    }
+    return implemented;
+  } catch {
+    return new Set();
+  }
+}
+
 export const scanCommand = new Command('scan')
   .description('Scan repository for compliance signals and update SSP')
   .argument('[path]', 'Repository path to scan', '.')
@@ -28,6 +46,8 @@ export const scanCommand = new Command('scan')
   .option('--enable <detectors>', `Comma-separated detectors to enable (${DETECTOR_NAMES.join(', ')})`)
   .option('--disable <detectors>', `Comma-separated detectors to disable (${DETECTOR_NAMES.join(', ')})`)
   .option('-q, --quiet', 'Reduce console output')
+  .option('--ci', 'CI mode: JSON output to stdout, no colors/spinners, structured exit codes')
+  .option('--baseline-ssp <file>', 'Previous SSP to diff against — reports new gaps and newly-covered controls')
   .option('--no-tips', 'Suppress tips and guidance text')
   .option('--pager', 'Show summary using pager (less)')
   .option('--ai-validate', 'Use AI (Copilot CLI) to validate control implementations against OSCAL requirements')
@@ -36,8 +56,8 @@ export const scanCommand = new Command('scan')
   .action(async (repoPath, options) => {
     const absolutePath = path.resolve(repoPath);
     const { config } = loadOscalFlowConfig(absolutePath);
-    const quiet = Boolean(options.quiet || config.quiet);
-    const showTips = options.tips && !config.suppressTips;
+    const quiet = Boolean(options.ci || options.quiet || config.quiet);
+    const showTips = !options.ci && options.tips && !config.suppressTips;
     const usePager = Boolean(options.pager || config.pager);
     const enabledDetectors: DetectorName[] = Array.from(
       new Set<DetectorName>([...(config.enabledDetectors ?? []), ...parseDetectorList(options.enable)])
@@ -58,9 +78,9 @@ export const scanCommand = new Command('scan')
         if (spinner) {
           spinner.fail(chalk.red(`Path not found: ${absolutePath}`));
         } else {
-          console.error(chalk.red(`Path not found: ${absolutePath}`));
+          console.error(options.ci ? `Path not found: ${absolutePath}` : chalk.red(`Path not found: ${absolutePath}`));
         }
-        process.exit(1);
+        process.exit(options.ci ? 2 : 1);
       }
       
       let signals = await scanRepository(absolutePath);
@@ -69,14 +89,16 @@ export const scanCommand = new Command('scan')
       if (signals.length === 0) {
         if (spinner) {
           spinner.warn(chalk.yellow('No compliance signals detected'));
-        } else {
+        } else if (!options.ci) {
           console.log(chalk.yellow('No compliance signals detected'));
         }
 
         if (showTips && !quiet) {
           console.log(chalk.gray('\nTip: Add Dockerfile, CI/CD workflows, or security libraries to improve detection'));
         }
-        return;
+        if (!options.ci) {
+          return;
+        }
       }
       
       if (spinner) {
@@ -157,6 +179,32 @@ export const scanCommand = new Command('scan')
       const detectedCount = uniqueControls.size;
       const coveragePercent = ((detectedCount / totalControls) * 100).toFixed(1);
       const timeSaved = (detectedCount * 0.5).toFixed(1);
+
+      if (options.baselineSsp) {
+        const previousControls = extractImplementedControls(options.baselineSsp);
+        const currentControls = new Set(signals.map(s => s.control));
+        const newlyDetected = [...currentControls].filter(control => !previousControls.has(control));
+        const newlyMissing = [...previousControls].filter(control => !currentControls.has(control));
+
+        if (!options.ci && !quiet) {
+          console.log(chalk.cyan('\n📈 ConMon Diff (vs baseline SSP):'));
+          if (newlyDetected.length > 0) {
+            console.log(chalk.green(`   ✓ Newly covered (${newlyDetected.length}): ${newlyDetected.join(', ')}`));
+          }
+          if (newlyMissing.length > 0) {
+            console.log(chalk.red(`   ✗ Newly missing (${newlyMissing.length}): ${newlyMissing.join(', ')}`));
+          }
+          if (newlyDetected.length === 0 && newlyMissing.length === 0) {
+            console.log(chalk.gray('   No changes in control coverage since last scan.'));
+          }
+          console.log('');
+        }
+
+        (options as { _diff?: { newlyDetected: string[]; newlyMissing: string[] } })._diff = {
+          newlyDetected,
+          newlyMissing
+        };
+      }
       
       if (!quiet) {
         console.log(chalk.cyan('\n📊 Coverage Summary:'));
@@ -203,8 +251,29 @@ export const scanCommand = new Command('scan')
         }
         
         printWithOptionalPager(summaryText, usePager);
-      } else {
+      } else if (!options.ci) {
         console.log(`Detected ${detectedCount} controls (${coveragePercent}% of ${baseline.toUpperCase()} baseline)`);
+      }
+
+      if (options.ci) {
+        const ciOutput = {
+          tool: 'oscalflow',
+          version: '1.1.0',
+          timestamp: new Date().toISOString(),
+          baseline,
+          signals,
+          summary: {
+            detected: uniqueControls.size,
+            total_baseline: totalControls,
+            coverage_pct: parseFloat(coveragePercent),
+            gap_count: totalControls - uniqueControls.size
+          },
+          ...((options as { _diff?: { newlyDetected: string[]; newlyMissing: string[] } })._diff
+            ? { diff: (options as { _diff?: { newlyDetected: string[]; newlyMissing: string[] } })._diff }
+            : {})
+        };
+        process.stdout.write(JSON.stringify(ciOutput, null, 2) + '\n');
+        process.exit(uniqueControls.size < totalControls ? 1 : 0);
       }
       
       if (options.update) {
@@ -321,9 +390,9 @@ export const scanCommand = new Command('scan')
       if (spinner) {
         spinner.fail(chalk.red('Scan failed'));
       } else {
-        console.error(chalk.red('Scan failed'));
+        console.error(options.ci ? 'Scan failed' : chalk.red('Scan failed'));
       }
       console.error(error);
-      process.exit(1);
+      process.exit(options.ci ? 2 : 1);
     }
   });
