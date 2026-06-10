@@ -27,8 +27,9 @@ coverage/
 # Internal documentation and planning
 .internal/
 SUBMISSION_SUMMARY.md
+AU-2-plan.md
 
-# Generated OSCAL files and test outputs
+# Generated OSCAL files, reports, and test outputs
 *.json
 !package.json
 !package-lock.json
@@ -40,3 +41,4 @@ SUBMISSION_SUMMARY.md
 
 # Build artifacts
 gh-oscal-cli
+report.html

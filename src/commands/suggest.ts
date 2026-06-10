@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
@@ -343,7 +343,8 @@ export const suggestCommand = new Command('suggest')
 
       // Check if gh copilot is available
       try {
-        execSync('gh copilot --version', { stdio: 'pipe' });
+        const check = spawnSync('gh', ['copilot', '--version'], { stdio: 'pipe' });
+        if (check.status !== 0) throw new Error();
       } catch (error) {
         spinner.fail(chalk.red('GitHub CLI with Copilot extension is not installed'));
         console.log(chalk.yellow('\nTo install:'));
@@ -359,31 +360,23 @@ export const suggestCommand = new Command('suggest')
       console.log(chalk.cyan('🤖 Getting implementation suggestions from GitHub Copilot CLI...\n'));
       console.log(chalk.gray('───────────────────────────────────────────────────\n'));
       
-      // Execute gh copilot in non-interactive mode with the prompt
-      // Using -p for non-interactive mode and --share to save output if requested
-      const escapedPrompt = prompt.replace(/'/g, "'\\''");
-      
-      // Build the copilot command with optional file output
-      let copilotCmd = `gh copilot -- -p '${escapedPrompt}' --allow-all-tools`;
+      // Build args array — no shell string, no escaping needed
+      const copilotArgs = ['copilot', '--', '-p', prompt, '--allow-all-tools'];
       if (options.output) {
         const outputPath = path.resolve(options.output);
-        copilotCmd += ` --share "${outputPath}"`;
+        copilotArgs.push('--share', outputPath);
         console.log(chalk.gray(`💾 Saving session to: ${outputPath}\n`));
       }
       
-      try {
-        execSync(copilotCmd, {
-          stdio: 'inherit',
-          cwd: absolutePath
-        });
-      } catch (error: any) {
-        // gh copilot exits with code 0 normally, but may exit with other codes
-        // We check if it's an actual error or just normal exit (including Ctrl+C)
-        if (error.status !== 0 && error.status !== 130) {
-          console.error(chalk.red('\n✗ Failed to get suggestions from GitHub Copilot'));
-          console.error(chalk.gray(error.message));
-          process.exit(1);
-        }
+      const result = spawnSync('gh', copilotArgs, {
+        stdio: 'inherit',
+        cwd: absolutePath
+      });
+
+      if (result.status !== null && result.status !== 0 && result.status !== 130) {
+        console.error(chalk.red('\n✗ Failed to get suggestions from GitHub Copilot'));
+        if (result.stderr) console.error(chalk.gray(result.stderr.toString()));
+        process.exit(1);
       }
       
       console.log(chalk.gray('\n───────────────────────────────────────────────────'));
