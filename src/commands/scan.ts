@@ -14,6 +14,8 @@ import {
   type ComplianceSignal
 } from '../lib/scanner.js';
 import { updateSSPWithSignals } from '../lib/mapper.js';
+import { loadBaselineControlIds, getBaselineCount } from '../lib/profile-loader.js';
+import { deterministicUUID } from '../lib/oscal-writer.js';
 import { loadOscalFlowConfig, parseDetectorList } from '../lib/config.js';
 import { printWithOptionalPager } from '../lib/output.js';
 import { validateControlImplementation, type ValidationResult } from '../lib/ai-validator.js';
@@ -30,6 +32,7 @@ export const scanCommand = new Command('scan')
   .option('--pager', 'Show summary using pager (less)')
   .option('--ai-validate', 'Use AI (Copilot CLI) to validate control implementations against OSCAL requirements')
   .option('--ai-limit <number>', 'Limit the number of controls to AI validate (useful for testing)', parseInt)
+  .option('--poam <file>', 'Generate a POA&M skeleton for unimplemented baseline controls')
   .action(async (repoPath, options) => {
     const absolutePath = path.resolve(repoPath);
     const { config } = loadOscalFlowConfig(absolutePath);
@@ -138,14 +141,26 @@ export const scanCommand = new Command('scan')
         return acc;
       }, {} as Record<string, number>);
       
-      const totalControls = 243; // MODERATE baseline
+      let baseline: 'low' | 'moderate' | 'high' = 'moderate';
+      if (options.update && fs.existsSync(options.update)) {
+        try {
+          const existingSSP = JSON.parse(fs.readFileSync(options.update, 'utf-8'));
+          const sensitivityLevel = existingSSP?.['system-security-plan']?.['system-characteristics']?.['security-sensitivity-level']?.toLowerCase();
+          if (sensitivityLevel === 'low' || sensitivityLevel === 'moderate' || sensitivityLevel === 'high') {
+            baseline = sensitivityLevel;
+          }
+        } catch {
+          // use default
+        }
+      }
+      const totalControls = getBaselineCount(baseline);
       const detectedCount = uniqueControls.size;
       const coveragePercent = ((detectedCount / totalControls) * 100).toFixed(1);
       const timeSaved = (detectedCount * 0.5).toFixed(1);
       
       if (!quiet) {
         console.log(chalk.cyan('\n📊 Coverage Summary:'));
-        console.log(chalk.white(`   ├─ Total Controls (MODERATE): ${totalControls}`));
+        console.log(chalk.white(`   ├─ Total Controls (${baseline.toUpperCase()}): ${totalControls}`));
         console.log(chalk.green(`   ├─ Auto-Detected: ${detectedCount} (${coveragePercent}%)`));
         console.log(chalk.yellow(`   ├─ Needs Documentation: ${totalControls - detectedCount} (${(100 - parseFloat(coveragePercent)).toFixed(1)}%)`));
         console.log(chalk.magenta(`   └─ Time Saved: ~${timeSaved} hours\n`));
@@ -189,7 +204,7 @@ export const scanCommand = new Command('scan')
         
         printWithOptionalPager(summaryText, usePager);
       } else {
-        console.log(`Detected ${detectedCount} controls (${coveragePercent}% of MODERATE baseline)`);
+        console.log(`Detected ${detectedCount} controls (${coveragePercent}% of ${baseline.toUpperCase()} baseline)`);
       }
       
       if (options.update) {
@@ -222,6 +237,69 @@ export const scanCommand = new Command('scan')
         }
       }
       
+      if (options.poam) {
+        const poamSpinner = quiet ? null : ora('Generating POA&M for unimplemented controls...').start();
+        try {
+          const detectedControls = new Set(signals.map(s => s.control));
+          const allBaselineControls = loadBaselineControlIds(baseline);
+          const missingControls = allBaselineControls.filter(c => !detectedControls.has(c));
+          
+          const systemName = options.update && fs.existsSync(options.update)
+            ? (() => { try { return JSON.parse(fs.readFileSync(options.update, 'utf-8'))?.['system-security-plan']?.['system-characteristics']?.['system-name'] ?? 'Unknown System'; } catch { return 'Unknown System'; } })()
+            : 'Unknown System';
+
+          const poam = {
+            'plan-of-action-and-milestones': {
+              uuid: deterministicUUID(`poam:${systemName}`),
+              metadata: {
+                title: `${systemName} Plan of Action and Milestones`,
+                'last-modified': new Date().toISOString(),
+                version: '1.0.0',
+                'oscal-version': '1.2.0'
+              },
+              'import-ssp': {
+                href: options.update ?? './ssp-draft.json'
+              },
+              'poam-items': missingControls.map(controlId => ({
+                uuid: deterministicUUID(`poam-item:${controlId}:${systemName}`),
+                title: `${controlId}: Implementation Required`,
+                description: `Control ${controlId} was not detected by automated scan. Implementation must be documented or completed.`,
+                props: [
+                  { name: 'control-id', value: controlId },
+                  { name: 'detection-method', value: 'automated-scan' }
+                ],
+                findings: [
+                  {
+                    uuid: deterministicUUID(`finding:${controlId}:${systemName}`),
+                    title: 'Control Not Detected',
+                    description: `OSCALFlow automated scan found no implementation evidence for ${controlId}.`,
+                    target: {
+                      type: 'statement-id',
+                      'target-id': `${controlId.toLowerCase().replace(/[()]/g, '')}_smt`,
+                      status: {
+                        state: 'not-satisfied',
+                        remarks: 'No implementation evidence detected by automated scan. Manual review required.'
+                      }
+                    }
+                  }
+                ],
+                remarks: 'Assign to development team. Set scheduled-completion-date before ATO submission.'
+              }))
+            }
+          };
+
+          fs.writeFileSync(options.poam, JSON.stringify(poam, null, 2));
+
+          if (poamSpinner) {
+            poamSpinner.succeed(chalk.green(`POA&M generated: ${missingControls.length} items → ${options.poam}`));
+          } else if (!quiet) {
+            console.log(chalk.green(`✓ POA&M generated: ${missingControls.length} unimplemented controls → ${options.poam}`));
+          }
+        } catch (err) {
+          if (poamSpinner) poamSpinner.fail(chalk.red(`POA&M generation failed: ${err instanceof Error ? err.message : String(err)}`));
+        }
+      }
+
       if (outputPath) {
         fs.writeFileSync(outputPath, JSON.stringify(signals, null, 2));
         if (!quiet) {

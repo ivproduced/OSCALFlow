@@ -7,6 +7,7 @@ export interface ComplianceSignal {
   file: string;
   control: string;
   evidence: string;
+  confidence: 'high' | 'medium' | 'low';
 }
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1 MB — prevents OOM on large files in repo
@@ -246,8 +247,30 @@ function findFilesByName(dirPath: string, fileName: string): string[] {
   return allFiles.filter(file => path.basename(file) === fileName);
 }
 
+/**
+ * Assign confidence to a signal based on detection method.
+ * High: dedicated security tooling files
+ * Low:  directory/doc presence only or keyword-in-filename
+ * Medium: content pattern match, dependency file, CI config
+ */
+function assignConfidence(signal: Omit<ComplianceSignal, 'confidence'>): ComplianceSignal {
+  const f = signal.file.toLowerCase();
+
+  const highFiles = ['.snyk', '.gitleaks.toml', '.trivyignore', 'dependabot.yml', 'dockerfile.ironbank', 'dockerfile.distroless', 'dockerfile.ubi', 'sbom'];
+  if (highFiles.some((h) => f.includes(h))) {
+    return { ...signal, confidence: 'high' };
+  }
+
+  const lowPatterns = ['/tests/', '/test/', '/docs/', '/spec/', 'readme', '.md', '.example', '.template', 'poam', 'risk_assessment', 'fisma'];
+  if (lowPatterns.some((p) => f.includes(p)) || f.endsWith('/')) {
+    return { ...signal, confidence: 'low' };
+  }
+
+  return { ...signal, confidence: 'medium' };
+}
+
 export async function scanRepository(repoPath: string): Promise<ComplianceSignal[]> {
-  const signals: ComplianceSignal[] = [];
+  const signals: Omit<ComplianceSignal, 'confidence'>[] = [];
   
   // Signal 1: Containerization
   const dockerfilePath = path.join(repoPath, 'Dockerfile');
@@ -1866,7 +1889,11 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
     }
   }
   
-  return signals;
+  return signals.map(assignConfidence);
+}
+
+function formatConfidenceBadge(signal: Partial<ComplianceSignal>): string {
+  return signal.confidence ? ` [${signal.confidence.toUpperCase()}]` : '';
 }
 
 export function formatSignalsSummary(signals: ComplianceSignal[]): string {
@@ -1884,7 +1911,7 @@ export function formatSignalsSummary(signals: ComplianceSignal[]): string {
   
   const lines: string[] = [];
   for (const [control, items] of Object.entries(grouped)) {
-    lines.push(`✓ ${control}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
+    lines.push(`✓ ${control}${formatConfidenceBadge(items[0])}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
   }
   
   return lines.join('\n');
@@ -1930,7 +1957,7 @@ export function formatSignalsSummaryWithValidation(
       }
     }
     
-    lines.push(`${statusIcon} ${control}${statusText}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
+    lines.push(`${statusIcon} ${control}${formatConfidenceBadge(items[0])}${statusText}: ${items[0].evidence} (${items.map(i => i.file).join(', ')})`);
   }
   
   return lines.join('\n');
