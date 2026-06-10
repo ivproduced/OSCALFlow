@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'path';
 import { getControlRequirements, type ControlRequirement } from './oscal-catalog-parser.js';
@@ -38,7 +38,7 @@ export async function validateControlImplementation(
     };
   }
   
-  // Read the file content
+  // Read the file content — skip symlinks and cap at 1 MB to prevent DoS
   const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(repoPath, filePath);
   
   if (!fs.existsSync(absolutePath)) {
@@ -50,7 +50,27 @@ export async function validateControlImplementation(
       aiAnalysis: `File ${filePath} does not exist`
     };
   }
-  
+
+  const stat = fs.lstatSync(absolutePath);
+  if (stat.isSymbolicLink()) {
+    return {
+      controlId,
+      validated: false,
+      confidence: 'low',
+      evidence: 'Skipped symbolic link',
+      aiAnalysis: `${filePath} is a symbolic link and was not read`
+    };
+  }
+  if (stat.size > 1024 * 1024) {
+    return {
+      controlId,
+      validated: false,
+      confidence: 'low',
+      evidence: 'File too large to validate',
+      aiAnalysis: `${filePath} exceeds 1 MB and was skipped`
+    };
+  }
+
   const fileContent = fs.readFileSync(absolutePath, 'utf-8');
   
   // Build the validation prompt for Copilot CLI
@@ -116,28 +136,34 @@ ANALYSIS: [1-2 sentence explanation]
 Be strict: Only return YES if there is clear evidence of implementation.`;
 }
 
+/** Allowlist of models that may be passed to gh copilot */
+const ALLOWED_MODELS = new Set([
+  'gpt-4o', 'gpt-4o-mini', 'gpt-5-mini', 'gpt-5.4-mini',
+  'claude-sonnet-4.6', 'claude-haiku-4.5', 'claude-opus-4.8',
+  'o1', 'o3-mini',
+]);
+
 /**
  * Call GitHub Copilot CLI for validation
  */
 async function callCopilotForValidation(prompt: string, cwd: string, model: string = 'gpt-5-mini'): Promise<string> {
-  // Escape the prompt for shell
-  const escapedPrompt = prompt.replace(/'/g, "'\"'\"'");
-  
-  // Use gh copilot CLI with specified model
-  const command = `gh copilot -- -p '${escapedPrompt}' --model ${model} --allow-all-tools`;
-  
+  // Validate model against allowlist to prevent argument injection
+  const safeModel = ALLOWED_MODELS.has(model) ? model : 'gpt-5-mini';
+
+  // Pass prompt as a discrete argument — no shell interpolation
+  const args = ['copilot', '--', '-p', prompt, '--model', safeModel, '--allow-all-tools'];
+
   try {
-    const output = execSync(command, {
+    const output = execFileSync('gh', args, {
       cwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-      timeout: 30000 // 30 second timeout
+      maxBuffer: 10 * 1024 * 1024, // 10 MB buffer
+      timeout: 30000 // 30 s timeout
     });
     
     return output;
   } catch (error: any) {
-    // If the command failed, return the stderr
     if (error.stderr) {
       throw new Error(`Copilot CLI error: ${error.stderr}`);
     }

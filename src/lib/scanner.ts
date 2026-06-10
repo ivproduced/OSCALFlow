@@ -9,6 +9,23 @@ export interface ComplianceSignal {
   evidence: string;
 }
 
+const MAX_FILE_BYTES = 1024 * 1024; // 1 MB — prevents OOM on large files in repo
+
+/**
+ * Safe file read: skips symlinks, caps at MAX_FILE_BYTES.
+ * Returns null if the file should be skipped.
+ */
+function safeReadFile(filePath: string): string | null {
+  try {
+    const stat = fs.lstatSync(filePath);
+    if (stat.isSymbolicLink() || stat.isDirectory()) return null;
+    if (stat.size === 0 || stat.size > MAX_FILE_BYTES) return null;
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Validates that a file exists and has meaningful content
  * @param filePath - Absolute path to the file
@@ -16,26 +33,10 @@ export interface ComplianceSignal {
  * @returns true if file exists with valid content
  */
 function hasValidContent(filePath: string, minLines: number = 1): boolean {
-  if (!fs.existsSync(filePath)) {
-    return false;
-  }
-  
-  try {
-    const stats = fs.statSync(filePath);
-    
-    // Empty files don't count
-    if (stats.size === 0) {
-      return false;
-    }
-    
-    // Read and validate content
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const nonEmptyLines = content.split('\n').filter(line => line.trim().length > 0);
-    
-    return nonEmptyLines.length >= minLines;
-  } catch (err) {
-    return false;
-  }
+  const content = safeReadFile(filePath);
+  if (content === null) return false;
+  const nonEmptyLines = content.split('\n').filter(line => line.trim().length > 0);
+  return nonEmptyLines.length >= minLines;
 }
 
 /**
@@ -286,7 +287,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   // Check for multi-stage distroless pattern in regular Dockerfile
   if (hasValidContent(dockerfilePath, 3)) {
     try {
-      const dockerContent = fs.readFileSync(dockerfilePath, 'utf-8');
+      const dockerContent = safeReadFile(dockerfilePath) ?? '';
       
       if (dockerContent.match(/FROM.*distroless|gcr\.io\/distroless/i)) {
         signals.push({
@@ -427,7 +428,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const packageJsonPath = path.join(repoPath, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      const packageJson = JSON.parse(safeReadFile(packageJsonPath) ?? '');
       
       // Authentication libraries
       if (packageJson.dependencies?.['bcrypt'] || packageJson.dependencies?.['argon2'] || packageJson.dependencies?.['bcryptjs']) {
@@ -481,7 +482,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   // Python requirements - ENHANCED
   const requirementsPath = path.join(repoPath, 'requirements.txt');
   if (fs.existsSync(requirementsPath)) {
-    const requirements = fs.readFileSync(requirementsPath, 'utf-8');
+    const requirements = safeReadFile(requirementsPath) ?? '';
     
     // Cryptographic libraries
     if (requirements.match(/cryptography|passlib|bcrypt/i)) {
@@ -521,7 +522,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const pomPath = path.join(repoPath, 'pom.xml');
   if (fs.existsSync(pomPath)) {
     try {
-      const pomContent = fs.readFileSync(pomPath, 'utf-8');
+      const pomContent = safeReadFile(pomPath) ?? '';
       
       // Spring Security
       if (pomContent.includes('spring-security')) {
@@ -572,7 +573,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const gradlePath = path.join(repoPath, 'build.gradle');
   if (fs.existsSync(gradlePath)) {
     try {
-      const gradleContent = fs.readFileSync(gradlePath, 'utf-8');
+      const gradleContent = safeReadFile(gradlePath) ?? '';
       
       if (gradleContent.includes('spring-security')) {
         signals.push({
@@ -598,7 +599,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const gemfilePath = path.join(repoPath, 'Gemfile');
   if (fs.existsSync(gemfilePath)) {
     try {
-      const gemfileContent = fs.readFileSync(gemfilePath, 'utf-8');
+      const gemfileContent = safeReadFile(gemfilePath) ?? '';
       
       // Devise (authentication)
       if (gemfileContent.includes('devise')) {
@@ -640,7 +641,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const goModPath = path.join(repoPath, 'go.mod');
   if (fs.existsSync(goModPath)) {
     try {
-      const goModContent = fs.readFileSync(goModPath, 'utf-8');
+      const goModContent = safeReadFile(goModPath) ?? '';
       
       // BCrypt
       if (goModContent.includes('golang.org/x/crypto/bcrypt')) {
@@ -681,9 +682,9 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
     try {
       let dotnetContent = '';
       if (fs.existsSync(packagesConfigPath)) {
-        dotnetContent = fs.readFileSync(packagesConfigPath, 'utf-8');
+        dotnetContent = safeReadFile(packagesConfigPath) ?? '';
       } else if (csprojFiles.length > 0) {
-        dotnetContent = fs.readFileSync(csprojFiles[0], 'utf-8');
+        dotnetContent = safeReadFile(csprojFiles[0]) ?? '';
       }
       
       // BCrypt.Net
@@ -721,7 +722,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const composerPath = path.join(repoPath, 'composer.json');
   if (fs.existsSync(composerPath)) {
     try {
-      const composerJson = JSON.parse(fs.readFileSync(composerPath, 'utf-8'));
+      const composerJson = JSON.parse(safeReadFile(composerPath) ?? '');
       const deps = { ...composerJson.require, ...composerJson['require-dev'] };
       
       // Laravel/Symfony security
@@ -759,7 +760,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const cargoPath = path.join(repoPath, 'Cargo.toml');
   if (fs.existsSync(cargoPath)) {
     try {
-      const cargoContent = fs.readFileSync(cargoPath, 'utf-8');
+      const cargoContent = safeReadFile(cargoPath) ?? '';
       
       // Argon2/BCrypt
       if (cargoContent.match(/argon2|bcrypt/)) {
@@ -844,24 +845,6 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
         evidence: 'System use notification displayed via middleware banner'
       });
     }
-  }
-  
-  // Signal 4: Configuration Management
-  if (fs.existsSync(path.join(repoPath, '.gitignore'))) {
-    signals.push({
-      file: '.gitignore',
-      control: 'CM-7',
-      evidence: 'Least functionality principle via exclusion of unnecessary files from version control'
-    });
-  }
-  
-  // Environment variables
-  if (fs.existsSync(path.join(repoPath, '.env.example')) || fs.existsSync(path.join(repoPath, '.env.template'))) {
-    signals.push({
-      file: '.env.example',
-      control: 'SC-12',
-      evidence: 'Cryptographic key management via environment variable configuration'
-    });
   }
   
   // Signal 5: Testing
@@ -1165,7 +1148,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const authServiceFiles = findFilesByName(repoPath, 'auth_service.py');
   for (const authServicePath of authServiceFiles) {
     try {
-      const authContent = fs.readFileSync(authServicePath, 'utf-8');
+      const authContent = safeReadFile(authServicePath) ?? '';
       const relPath = path.relative(repoPath, authServicePath);
       
       // IA-2: Identification and Authentication
@@ -1227,7 +1210,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const guardrailsPath = path.join(repoPath, 'backend/services/guardrails_service.py');
   if (fs.existsSync(guardrailsPath)) {
     try {
-      const guardrailsContent = fs.readFileSync(guardrailsPath, 'utf-8');
+      const guardrailsContent = safeReadFile(guardrailsPath) ?? '';
       
       // SI-10: Information Input Validation
       if (guardrailsContent.includes('validate_input') || guardrailsContent.includes('sanitize')) {
@@ -1259,7 +1242,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       
       for (const serviceFile of serviceFiles) {
         try {
-          const content = fs.readFileSync(serviceFile, 'utf-8');
+          const content = safeReadFile(serviceFile) ?? '';
           
           // SI-4: System Monitoring (structured logging)
           if (content.includes('structlog') || content.includes('logger.info') || content.includes('logger.error')) {
@@ -1289,30 +1272,17 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
     });
   }
   
-  // Environment Configuration - NEW
+  // Environment Configuration
   const envExamplePath = path.join(repoPath, '.env.example');
   if (fs.existsSync(envExamplePath)) {
-    try {
-      const envContent = fs.readFileSync(envExamplePath, 'utf-8');
-      
-      // CM-2: Baseline Configuration
-      signals.push({
-        file: '.env.example',
-        control: 'CM-2',
-        evidence: 'Baseline configuration documented via environment variable template'
-      });
-      
-      // SC-8: Transmission Confidentiality (if HTTPS/TLS settings)
-      if (envContent.includes('HTTPS') || envContent.includes('TLS') || envContent.includes('SSL')) {
-        signals.push({
-          file: '.env.example',
-          control: 'SC-8',
-          evidence: 'Transmission confidentiality via HTTPS/TLS configuration'
-        });
-      }
-    } catch (err) {
-      // Ignore errors
-    }
+    // CM-2: an .env.example is a documented baseline configuration template
+    signals.push({
+      file: '.env.example',
+      control: 'CM-2',
+      evidence: 'Baseline configuration documented via environment variable template'
+    });
+    // Note: presence of HTTPS/TLS/SSL variable names in a template file does NOT
+    // confirm SC-8 (Transmission Confidentiality) — removed to avoid false positive.
   }
   
   // Error Handling Detection - NEW
@@ -1323,7 +1293,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       
       for (const apiFile of apiFiles) {
         try {
-          const content = fs.readFileSync(apiFile, 'utf-8');
+          const content = safeReadFile(apiFile) ?? '';
           
           // SI-11: Error Handling
           if ((content.includes('try:') && content.includes('except')) || content.includes('HTTPException')) {
@@ -1347,7 +1317,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const dbPath = path.join(repoPath, 'backend/core/database.py');
   if (fs.existsSync(dbPath)) {
     try {
-      const dbContent = fs.readFileSync(dbPath, 'utf-8');
+      const dbContent = safeReadFile(dbPath) ?? '';
       
       // SC-28: Protection of Information at Rest
       if (dbContent.includes('encrypt') || dbContent.includes('ssl_mode') || dbContent.includes('AsyncSession')) {
@@ -1366,7 +1336,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const dependenciesPath = path.join(repoPath, 'backend/api/dependencies.py');
   if (fs.existsSync(dependenciesPath)) {
     try {
-      const depContent = fs.readFileSync(dependenciesPath, 'utf-8');
+      const depContent = safeReadFile(dependenciesPath) ?? '';
       
       // AC-3: Access Enforcement
       if (depContent.includes('get_current_user') || depContent.includes('require_auth') || depContent.includes('Permission')) {
@@ -1444,7 +1414,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const coreConfigPath = path.join(repoPath, 'backend/core/config.py');
   if (fs.existsSync(coreConfigPath)) {
     try {
-      const configContent = fs.readFileSync(coreConfigPath, 'utf-8');
+      const configContent = safeReadFile(coreConfigPath) ?? '';
       
       // IA-8: Non-organizational users
       if (configContent.match(/SAML|SSO|ENABLE_SAML/i)) {
@@ -1472,7 +1442,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   const adminApiPath = path.join(repoPath, 'backend/api/v1/admin.py');
   if (fs.existsSync(adminApiPath)) {
     try {
-      const adminContent = fs.readFileSync(adminApiPath, 'utf-8');
+      const adminContent = safeReadFile(adminApiPath) ?? '';
       
       if (adminContent.includes('backup')) {
         signals.push({
@@ -1565,7 +1535,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
         if (fileName.includes('fisma')) {
           // Read content for specific control evidence
           try {
-            const fismaContent = fs.readFileSync(docFile, 'utf-8');
+            const fismaContent = safeReadFile(docFile) ?? '';
             
             // IR-4: Incident Handling
             if (fismaContent.match(/incident.*response|response.*procedure/i)) {
@@ -1738,7 +1708,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   );
   for (const dbConfig of dbConfigFiles) {
     try {
-      const content = fs.readFileSync(dbConfig, 'utf-8');
+      const content = safeReadFile(dbConfig) ?? '';
       if (content.match(/ssl.*true|tls.*enabled|sslmode.*require/i)) {
         signals.push({
           file: path.basename(dbConfig),
@@ -1807,7 +1777,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   try {
     const gitConfigPath = path.join(repoPath, '.git/config');
     if (fs.existsSync(gitConfigPath)) {
-      const gitConfig = fs.readFileSync(gitConfigPath, 'utf-8');
+      const gitConfig = safeReadFile(gitConfigPath) ?? '';
       if (gitConfig.includes('gpgsign') || gitConfig.includes('signingkey')) {
         signals.push({
           file: '.git/config',
@@ -1863,7 +1833,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
   );
   for (const cfTemplate of cfTemplates) {
     try {
-      const content = fs.readFileSync(cfTemplate, 'utf-8');
+      const content = safeReadFile(cfTemplate) ?? '';
       
       // Security Groups
       if (content.includes('AWS::EC2::SecurityGroup')) {
