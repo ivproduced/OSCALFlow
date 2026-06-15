@@ -625,7 +625,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       const gemfileContent = safeReadFile(gemfilePath) ?? '';
       
       // Devise (authentication)
-      if (gemfileContent.includes('devise')) {
+      if (/\bdevise\b/i.test(gemfileContent)) {
         signals.push({
           file: 'Gemfile',
           control: 'IA-2',
@@ -639,7 +639,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // BCrypt
-      if (gemfileContent.includes('bcrypt')) {
+      if (/\bbcrypt\b/i.test(gemfileContent)) {
         signals.push({
           file: 'Gemfile',
           control: 'IA-5',
@@ -648,7 +648,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // OmniAuth (OAuth)
-      if (gemfileContent.includes('omniauth')) {
+      if (/\bomniauth\b/i.test(gemfileContent)) {
         signals.push({
           file: 'Gemfile',
           control: 'IA-2',
@@ -667,7 +667,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       const goModContent = safeReadFile(goModPath) ?? '';
       
       // BCrypt
-      if (goModContent.includes('golang.org/x/crypto/bcrypt')) {
+      if (/golang\.org\/x\/crypto\/bcrypt/.test(goModContent)) {
         signals.push({
           file: 'go.mod',
           control: 'IA-5',
@@ -676,7 +676,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // JWT
-      if (goModContent.includes('jwt-go') || goModContent.includes('golang-jwt')) {
+      if (/\bjwt-go\b/.test(goModContent) || /\bgolang-jwt\b/.test(goModContent)) {
         signals.push({
           file: 'go.mod',
           control: 'IA-2',
@@ -711,7 +711,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // BCrypt.Net
-      if (dotnetContent.includes('BCrypt.Net')) {
+      if (/BCrypt\.Net/.test(dotnetContent)) {
         signals.push({
           file: fs.existsSync(packagesConfigPath) ? 'packages.config' : path.basename(csprojFiles[0]),
           control: 'IA-5',
@@ -720,7 +720,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // IdentityServer
-      if (dotnetContent.includes('IdentityServer')) {
+      if (/IdentityServer/.test(dotnetContent)) {
         signals.push({
           file: fs.existsSync(packagesConfigPath) ? 'packages.config' : path.basename(csprojFiles[0]),
           control: 'IA-2',
@@ -729,7 +729,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // Serilog
-      if (dotnetContent.includes('Serilog')) {
+      if (/\bSerilog\b/.test(dotnetContent)) {
         signals.push({
           file: fs.existsSync(packagesConfigPath) ? 'packages.config' : path.basename(csprojFiles[0]),
           control: 'AU-2',
@@ -795,7 +795,7 @@ export async function scanRepository(repoPath: string): Promise<ComplianceSignal
       }
       
       // JWT
-      if (cargoContent.includes('jsonwebtoken')) {
+      if (/\bjsonwebtoken\b/.test(cargoContent)) {
         signals.push({
           file: 'Cargo.toml',
           control: 'IA-2',

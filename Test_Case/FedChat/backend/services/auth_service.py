@@ -217,7 +217,12 @@ class AuthService:
     async def validate_api_key(db: AsyncSession, api_key: str) -> Optional[User]:
         """Validate API key and return associated user"""
         import hashlib
-        key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        import hmac
+        import os
+        secret = os.environ.get("API_KEY_HMAC_SECRET", "").encode()
+        if not secret:
+            raise RuntimeError("API_KEY_HMAC_SECRET environment variable must be set")
+        key_hash = hmac.new(secret, api_key.encode(), hashlib.sha256).hexdigest()
         
         result = await db.execute(
             select(APIKey).where(

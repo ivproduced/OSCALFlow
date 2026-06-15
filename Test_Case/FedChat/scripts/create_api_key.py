@@ -4,6 +4,8 @@ Generate API key for a user
 """
 import asyncio
 import sys
+import hmac
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
 import secrets
@@ -23,8 +25,11 @@ def generate_api_key() -> str:
     return f"fck_{secrets.token_urlsafe(32)}"
 
 def hash_api_key(key: str) -> str:
-    """Hash API key for storage"""
-    return hashlib.sha256(key.encode()).hexdigest()
+    """Hash API key for storage using HMAC-SHA256 with a server-side secret."""
+    secret = os.environ.get("API_KEY_HMAC_SECRET", "").encode()
+    if not secret:
+        raise RuntimeError("API_KEY_HMAC_SECRET environment variable must be set")
+    return hmac.new(secret, key.encode(), hashlib.sha256).hexdigest()
 
 async def create_api_key():
     """Create API key for a user"""
@@ -83,7 +88,9 @@ async def create_api_key():
             print(f"   User: {user.email}")
             print(f"   Expires: {api_key.expires_at.strftime('%Y-%m-%d')}")
             print("\n⚠️  SAVE THIS KEY - IT WILL NOT BE SHOWN AGAIN:")
-            print(f"\n   {api_key_value}\n")
+            # Write key directly to stderr to avoid capture in CI logs
+            sys.stderr.write(f"\n   {api_key_value}\n\n")
+            sys.stderr.flush()
             print("Use this key in the X-API-Key header for authentication.")
             
     except Exception as e:

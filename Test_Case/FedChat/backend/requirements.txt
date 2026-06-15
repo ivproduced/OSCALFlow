@@ -27,7 +27,7 @@ datasets==2.16.1  # HuggingFace datasets for NIST publications
 langchain-openai==0.0.5  # OpenAI embeddings for NIST RAG
 
 # Policy RAG Integration
-GitPython==3.1.40  # GitHub repository cloning for policy documents
+GitPython==3.1.50  # GitHub repository cloning for policy documents
 
 # Database
 sqlalchemy==2.0.25
@@ -40,11 +40,11 @@ redis==5.0.1
 hiredis==2.3.2
 
 # Document processing (RAG)
-pypdf==4.0.0
+pypdf==6.13.2
 python-docx==1.1.0
 python-pptx==0.6.23
 openpyxl==3.1.2
-markdown==3.5.2
+markdown==3.10.2
 beautifulsoup4==4.12.3
 unstructured==0.12.0
 

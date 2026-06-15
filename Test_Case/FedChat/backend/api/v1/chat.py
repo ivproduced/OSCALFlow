@@ -148,7 +148,7 @@ async def chat_stream(
             
         except Exception as e:
             logger.error("chat_stream_error", error=str(e))
-            yield f"data: {{\"error\": \"Stream error: {str(e)}\"}}\n\n"
+            yield "data: {\"error\": \"An internal error occurred. Please try again.\"}\n\n"
     
     return StreamingResponse(
         generate_response(),
