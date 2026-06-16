@@ -55,7 +55,7 @@ guardrails-ai==0.6.8
 # Security and auth
 python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
-python-multipart==0.0.27
+python-multipart==0.0.31
 cryptography==46.0.7
 
 # Monitoring and logging
